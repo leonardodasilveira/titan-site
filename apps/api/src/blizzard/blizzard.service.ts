@@ -17,6 +17,22 @@ export interface AccountCharacter {
   realmSlug: string;
 }
 
+/**
+ * Roster + a procedência do dado.
+ *
+ * Existe porque "roster" e "roster confiável" não são a mesma coisa. Para
+ * renderizar página, cache velho serve. Para decidir que alguém saiu da guilda,
+ * não serve: ausência causada por falha de API é indistinguível de saída de
+ * verdade, e o erro custa o acesso de um membro legítimo.
+ */
+export interface RosterSnapshot {
+  members: RosterMember[];
+  /** Quando estes dados vieram da Blizzard de fato. */
+  fetchedAt: number;
+  /** true = a chamada falhou e isto é o cache anterior. Nunca revogue com isto. */
+  stale: boolean;
+}
+
 interface TokenResponse {
   access_token: string;
   expires_in: number;
@@ -205,14 +221,25 @@ export class BlizzardService implements OnModuleInit {
     return characters;
   }
 
-  /** Roster da guilda, com cache. Fonte da verdade para membership. */
+  /**
+   * Roster da guilda, com cache. Fonte da verdade para membership.
+   *
+   * Quem só precisa da lista usa isto. Quem vai *revogar* acesso com base na
+   * ausência de alguém precisa saber se o dado é fresco — use
+   * `getGuildRosterSnapshot`.
+   */
   async getGuildRoster(force = false): Promise<RosterMember[]> {
+    return (await this.getGuildRosterSnapshot(force)).members;
+  }
+
+  /** Roster com a procedência junto. Ver RosterSnapshot. */
+  async getGuildRosterSnapshot(force = false): Promise<RosterSnapshot> {
     if (
       !force &&
       this.rosterCache &&
       Date.now() - this.rosterCache.fetchedAt < BlizzardService.ROSTER_TTL_MS
     ) {
-      return this.rosterCache.members;
+      return { ...this.rosterCache, stale: false };
     }
 
     const token = await this.getClientToken();
@@ -234,7 +261,7 @@ export class BlizzardService implements OnModuleInit {
         this.logger.warn(
           `Roster falhou (HTTP ${res.status}); usando cache de ${new Date(this.rosterCache.fetchedAt).toISOString()}`,
         );
-        return this.rosterCache.members;
+        return { ...this.rosterCache, stale: true };
       }
       throw new Error(`Falha ao buscar o roster da guilda: HTTP ${res.status}`);
     }
@@ -255,7 +282,7 @@ export class BlizzardService implements OnModuleInit {
 
     this.rosterCache = { members, fetchedAt: Date.now() };
     this.logger.log(`Roster atualizado: ${members.length} membros`);
-    return members;
+    return { ...this.rosterCache, stale: false };
   }
 
   /**

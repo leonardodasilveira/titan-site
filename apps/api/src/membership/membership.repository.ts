@@ -1,0 +1,81 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+
+/** O que o job precisa saber de cada membro. Nada de battletag: não é usado aqui. */
+export interface MemberToRevalidate {
+  id: string;
+  guildRank: number | null;
+  matchedCharacterSlug: string | null;
+  matchedCharacterRealm: string | null;
+}
+
+/**
+ * Único lugar do módulo membership que fala com o Prisma — ver Regra 3 do CLAUDE.md.
+ */
+@Injectable()
+export class MembershipRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  /** Todo mundo que hoje tem acesso à área interna. */
+  findMembers(): Promise<MemberToRevalidate[]> {
+    return this.prisma.user.findMany({
+      where: { membership: 'member' },
+      select: {
+        id: true,
+        guildRank: true,
+        matchedCharacterSlug: true,
+        matchedCharacterRealm: true,
+      },
+    });
+  }
+
+  /**
+   * Tira a membership e derruba as sessões, numa transação só.
+   *
+   * Os dois passos juntos porque separados abrem uma janela: entre marcar
+   * not_member e apagar a sessão, um crash deixaria o ex-membro dentro com uma
+   * sessão válida que nenhuma rodada futura do job iria olhar de novo — o job
+   * só varre quem ainda é `member`.
+   *
+   * Apagar a sessão é o que corta o acesso na hora. É exatamente para isso que
+   * a sessão tem estado no banco em vez de ser JWT.
+   *
+   * @returns quantas sessões foram apagadas
+   */
+  async revokeMembership(userIds: string[]): Promise<number> {
+    if (userIds.length === 0) return 0;
+
+    const [, sessions] = await this.prisma.$transaction([
+      this.prisma.user.updateMany({
+        where: { id: { in: userIds } },
+        data: {
+          membership: 'not_member',
+          // O rank vira nulo junto: manter o último rank faria a área pública
+          // exibir "rank 3" para quem não está mais na guilda.
+          guildRank: null,
+          verifiedAt: new Date(),
+        },
+      }),
+      this.prisma.session.deleteMany({ where: { userId: { in: userIds } } }),
+    ]);
+
+    return sessions.count;
+  }
+
+  /** Promoção/rebaixamento no jogo refletido no site. */
+  async updateRank(userId: string, guildRank: number): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { guildRank, verifiedAt: new Date() },
+    });
+  }
+
+  /** Marca "conferido agora" para quem continua membro sem mudança de rank. */
+  async touchVerified(userIds: string[]): Promise<void> {
+    if (userIds.length === 0) return;
+    await this.prisma.user.updateMany({
+      where: { id: { in: userIds } },
+      data: { verifiedAt: new Date() },
+    });
+  }
+}
