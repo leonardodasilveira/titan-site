@@ -1,0 +1,29 @@
+node_modules/
+dist/
+build/
+.next/
+out/
+
+# Env — nunca commitar. Ver .env.example
+.env
+.env.local
+.env.*.local
+
+# Prisma
+*.db
+*.db-journal
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Testes
+coverage/

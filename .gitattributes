@@ -1,0 +1,15 @@
+# Normaliza line endings no repositório (LF), independente do OS de cada dev.
+# Sem isso, dois devs em SOs diferentes geram diffs inteiros de CRLF/LF.
+* text=auto eol=lf
+
+# Binários — nunca normalizar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# Lockfile: gerado, não revisar linha a linha em PR
+pnpm-lock.yaml linguist-generated=true -diff

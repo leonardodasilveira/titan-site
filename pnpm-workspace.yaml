@@ -1,0 +1,12 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# Build scripts liberados explicitamente (pnpm exige decisão consciente).
+# - esbuild: motor do tsup, que compila o packages/shared
+# - sharp: otimização de imagem do Next
+# - unrs-resolver: resolver de imports do ESLint
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
