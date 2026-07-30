@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancela runs antigas do mesmo PR quando chega um push novo — não faz sentido
+# esperar CI de commit que já foi substituído (e economiza minutos de Actions).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Antes do setup-node: o cache de pnpm do setup-node precisa que o pnpm
+      # já exista. A versão vem do campo packageManager do package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        # --frozen-lockfile: falha se o lockfile estiver dessincronizado do
+        # package.json, em vez de "consertar" silenciosamente. É o ponto de ter
+        # lockfile commitado.
+        run: pnpm install --frozen-lockfile
+
+      - name: Formatação
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      # Build antes do typecheck de propósito: o packages/shared precisa estar
+      # compilado (dist + .d.ts) para os apps resolverem seus tipos.
+      - name: Build
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Testes
+        run: pnpm test

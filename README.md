@@ -42,13 +42,13 @@ Scaffold pronto e verificado: os três workspaces buildam, `pnpm typecheck` pass
 
 ## Comandos
 
-| Comando | O que faz |
-|---|---|
-| `pnpm dev` | shared (watch) + web + api |
-| `pnpm dev:web` | só o Next |
-| `pnpm dev:api` | só o Nest |
-| `pnpm typecheck` | todos os workspaces |
-| `pnpm build` | build de tudo, na ordem de dependência |
-| `pnpm lint` | ESLint |
-| `pnpm test` | testes |
-| `pnpm format` | Prettier |
+| Comando          | O que faz                              |
+| ---------------- | -------------------------------------- |
+| `pnpm dev`       | shared (watch) + web + api             |
+| `pnpm dev:web`   | só o Next                              |
+| `pnpm dev:api`   | só o Nest                              |
+| `pnpm typecheck` | todos os workspaces                    |
+| `pnpm build`     | build de tudo, na ordem de dependência |
+| `pnpm lint`      | ESLint                                 |
+| `pnpm test`      | testes                                 |
+| `pnpm format`    | Prettier                               |

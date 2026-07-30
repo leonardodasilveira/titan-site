@@ -1,0 +1,10 @@
+# Gerados — o Prettier não deve tocar
+pnpm-lock.yaml
+node_modules/
+dist/
+.next/
+coverage/
+next-env.d.ts
+
+# Gerado pelo create-next-app, com marcadores próprios
+apps/web/AGENTS.md

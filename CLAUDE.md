@@ -110,6 +110,31 @@ pnpm format
 pnpm build                # todos, na ordem de dependência
 ```
 
+## Fluxo de git
+
+`main` é protegida: nada de push direto, nada de force-push. Todo trabalho entra por PR.
+
+```bash
+git switch -c leonardodasilveira/tit-15-formulario-de-apply-em-apply
+# ... trabalho ...
+git push          # push.autoSetupRemote já cria o upstream
+gh pr create
+```
+
+**Nome da branch vem do Linear.** Cada issue tem um `gitBranchName` pronto (botão de copiar na issue). Usar esse nome faz o Linear ligar branch, PR e issue automaticamente, e mover a issue de status sozinho. Inventar nome de branch quebra essa ligação.
+
+O CI (`.github/workflows/ci.yml`) roda no PR: formatação, lint, build, typecheck e testes. Merge só com CI verde.
+
+Review do outro dev é bem-vindo, mas não obrigatório — em dupla, review obrigatório trava quando um dos dois está offline.
+
+Antes de abrir PR, rodar localmente o que o CI roda:
+
+```bash
+pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test
+```
+
+`pnpm build` **antes** de `pnpm typecheck`: o `packages/shared` precisa estar compilado para os apps resolverem os tipos dele.
+
 ## Segredos
 
 Nada de credencial no repositório. Tudo em `.env` local, documentado em `.env.example`.
@@ -124,11 +149,11 @@ Nunca commitar: `DATABASE_URL`, `BLIZZARD_CLIENT_ID`, `BLIZZARD_CLIENT_SECRET`, 
 
 ## Decisões já tomadas (não reabrir sem motivo)
 
-| Decisão | Escolha | Motivo |
-|---|---|---|
-| Front | Next.js, não Vite/SPA | existe landing pública que precisa de SEO **e** área logada |
-| Back | NestJS | um dos devs já domina |
-| Auth | Battle.net OAuth2 | verifica membership de verdade via roster; zero senha para guardar |
-| Sessão | cookie de sessão com estado no banco | permite revogar acesso na hora quando alguém sai da guilda; JWT sem revogação deixaria ex-membro dentro até expirar |
-| Banco | PostgreSQL + Prisma | melhor DX com Nest, tipos gerados |
-| Deploy | Docker por app | destino ainda não decidido; portável entre PaaS e VPS |
+| Decisão | Escolha                              | Motivo                                                                                                              |
+| ------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Front   | Next.js, não Vite/SPA                | existe landing pública que precisa de SEO **e** área logada                                                         |
+| Back    | NestJS                               | um dos devs já domina                                                                                               |
+| Auth    | Battle.net OAuth2                    | verifica membership de verdade via roster; zero senha para guardar                                                  |
+| Sessão  | cookie de sessão com estado no banco | permite revogar acesso na hora quando alguém sai da guilda; JWT sem revogação deixaria ex-membro dentro até expirar |
+| Banco   | PostgreSQL + Prisma                  | melhor DX com Nest, tipos gerados                                                                                   |
+| Deploy  | Docker por app                       | destino ainda não decidido; portável entre PaaS e VPS                                                               |
