@@ -117,6 +117,43 @@ Realm e nome de personagem **sempre** comparados via `toSlug()` do shared, nunca
 
 A Blizzard devolve realm como slug (`area-52`) em alguns endpoints e como nome exibido (`Area 52`) em outros, e nomes vêm com acento e capitalização variável. Comparar string crua faz a verificação de membership falhar **silenciosamente** — o pior tipo de bug aqui, porque parece que funcionou.
 
+## Regra 7 — O site é o registro, o Discord é a interface
+
+A guilda tem ~590 membros e boa parte não é engajada. Funcionalidade de área interna que só funciona se as pessoas abrirem o site com frequência **não vai funcionar**.
+
+- O que é oportuno, empurra (site → Discord).
+- O que é durável, guarda (site).
+- Todo post no Discord linka fundo, na página exata, nunca na home.
+- Nada que o Discord já resolva deve exigir o site.
+
+O site ganha das outras ferramentas em uma coisa só, e é nela que vale investir. WoWAudit planeja raid, WarcraftLogs analisa pull, Raider.IO mede M+ — nenhum deles responde "como essa pessoa se comportou na nossa guilda nos últimos 6 meses", porque isso exige juntar as três fontes com os nossos próprios eventos de roster, ao longo do tempo. Não refazer o que essas ferramentas já fazem bem.
+
+### Gravar vem antes de exibir
+
+As APIs externas respondem o **estado atual**. Nenhuma delas responde "como estava em março". A linha do tempo da guilda só existe se a gente estiver gravando desde antes de alguém pedir.
+
+Por isso job de gravação (evento de roster, snapshot semanal) entra **antes** da tela que mostra o dado, mesmo parecendo trabalho sem entrega visível. Tela atrasada se constrói depois; semana não gravada não volta.
+
+Corolário: falha de coleta é **lacuna**, nunca zero. Gravar 0 porque a API caiu vira "a pessoa parou de jogar" — mentira que o gráfico conta com cara de verdade.
+
+### Derivar automático, humano corrige, guardar a correção
+
+Vale para tudo que gera dado sobre o comportamento de uma pessoa.
+
+O caso concreto: quem foi para o banco e quem furou a raid são **indistinguíveis** no log — os dois simplesmente não aparecem em pull nenhuma. E significam coisas opostas.
+
+Então o sistema grava o fato observável ("Não Raidou") e oferece ao raid leader anotar o motivo depois. O que fica no banco é a correção do humano, nunca a inferência. Sistema que decide sozinho a reputação de alguém erra em público, e a liderança para de confiar nele.
+
+### Visibilidade do histórico
+
+Generaliza a exceção da Regra 4:
+
+- **Oficial** vê o detalhe de qualquer pessoa.
+- **Membro** vê o próprio histórico, inteiro.
+- **Membro não vê o histórico de outro membro.**
+
+Presença, loot e evolução são dados sobre pessoas reais que ninguém combinou tornar públicos ao entrar na guilda. Ranking público de falta gera treta e não ajuda o RL a decidir nada — ele já tem o detalhe.
+
 ## Comandos
 
 ```bash
