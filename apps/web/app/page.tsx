@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Suspense } from 'react';
 import { ApiStatus, ApiStatusSkeleton } from './_components/api-status';
 
@@ -67,9 +68,14 @@ export default function Home() {
           Ambiente seguro e divertido, com gente de perfis bem diferentes. Se o horário bate com o
           seu, vale conversar.
         </p>
-        <span className="border-accent-soft bg-accent-soft text-accent mt-5 inline-block rounded-full border px-3 py-1 font-mono text-xs">
-          formulário de apply em breve
-        </span>
+        <div className="mt-5 flex flex-wrap items-center gap-4">
+          <span className="border-accent-soft bg-accent-soft text-accent inline-block rounded-full border px-3 py-1 font-mono text-xs">
+            formulário de apply em breve
+          </span>
+          <Link href="/entrar" className="text-fg-muted hover:text-fg text-sm underline">
+            Já é membro? Entrar
+          </Link>
+        </div>
       </section>
 
       {/* Painel temporário de desenvolvimento — sai quando a landing estiver pronta. */}
