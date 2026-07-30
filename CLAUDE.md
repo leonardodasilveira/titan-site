@@ -81,7 +81,16 @@ src/applications/
 | membro sem acesso | no roster, rank acima do corte  | não          | não                 |
 | membro            | no roster, rank dentro do corte | **sim**      | não                 |
 
-O corte é por `guildRank`, vindo de `GUILD_RANK_ACCESS_MAX`. **Rank 1 é o mais alto**, então o teste é `rank <= corte` — menor número, mais poder. Use `canAccessInternalArea()` do shared; nunca escreva o número na regra de negócio.
+O corte é por `guildRank`, vindo de `GUILD_RANK_ACCESS_MAX`. **Rank 0 é o mais alto** — é o guild master — e o número cresce descendo a hierarquia, então o teste é `rank <= corte`. Use `canAccessInternalArea()` do shared; nunca escreva o número na regra de negócio.
+
+Distribuição real do roster em 30/07/2026, que é o que justifica o corte em 4:
+
+| rank      | 0   | 1   | 2   | 3   | 4 (Raider) | 5   | 6   | 7   |
+| --------- | --- | --- | --- | --- | ---------- | --- | --- | --- |
+| chars     | 1   | 1   | 3   | 4   | 17         | 123 | 52  | 389 |
+| acumulado | 1   | 2   | 5   | 9   | **26**     | 149 | 201 | 590 |
+
+O salto de 26 para 149 no rank 5 é a fronteira entre o time de raid e o resto da guilda.
 
 O estado do meio existe por um motivo específico: um social que está na guilda há dois anos não pode receber a tela de "candidate-se para entrar na guilda". Colapsar ele em não-membro é ofensivo e faz o site parecer quebrado.
 

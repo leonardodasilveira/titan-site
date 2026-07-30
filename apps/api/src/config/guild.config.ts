@@ -14,7 +14,20 @@ export interface GuildConfig {
   region: Region;
   name: string;
   realm: string;
+
+  /**
+   * Corte de rank para a área interna — ver Regra 4 do CLAUDE.md.
+   *
+   * Rank 0 é o guild master, então o teste é `rank <= corte`. Fica em
+   * configuração, e não em constante no código, porque `rank` é a **posição**
+   * do rank na lista da guilda: reordenar ranks no jogo muda o significado do
+   * número sem gerar erro nenhum.
+   */
+  rankAccessMax: number;
 }
+
+/** Corte usado quando `GUILD_RANK_ACCESS_MAX` não está definida. */
+const DEFAULT_RANK_ACCESS_MAX = 4;
 
 /**
  * Lê e valida a config da guilda.
@@ -47,5 +60,31 @@ export function loadGuildConfig(env: NodeJS.ProcessEnv = process.env): GuildConf
     );
   }
 
-  return { region: region.data, name, realm };
+  return { region: region.data, name, realm, rankAccessMax: parseRankAccessMax(env) };
+}
+
+/**
+ * Corte de rank, com default seguro.
+ *
+ * Ausente cai no default de propósito: um `.env` antigo (de antes da Regra 4
+ * mudar) não pode derrubar a API no boot. O default é o corte real da guilda,
+ * então errar aqui restringe, não libera.
+ *
+ * Valor inválido **lança**, porque `Number('raider')` é `NaN` e toda comparação
+ * com `NaN` é falsa — a área interna ficaria inacessível para todo mundo, sem
+ * nenhuma mensagem de erro.
+ */
+function parseRankAccessMax(env: NodeJS.ProcessEnv): number {
+  const raw = env.GUILD_RANK_ACCESS_MAX?.trim();
+  if (!raw) return DEFAULT_RANK_ACCESS_MAX;
+
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error(
+      `GUILD_RANK_ACCESS_MAX inválido: "${raw}". Esperado um inteiro >= 0 ` +
+        '(rank 0 é o guild master; o número cresce descendo a hierarquia).',
+    );
+  }
+
+  return parsed;
 }
