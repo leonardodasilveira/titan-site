@@ -82,9 +82,13 @@ model GuildCharacter {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  /// Normalizados via toSlug() — comparar string crua faz a verificação falhar
-  /// em silêncio com nome acentuado. Ver Regra 6 do CLAUDE.md.
-  slug      String
+  /// Identidade do personagem via toCharacterKey(): minúsculas em NFC, COM
+  /// acento. Acento distingue personagens diferentes — Shrëwd, Shrêwd e Shrèwd
+  /// são três pessoas com ranks diferentes. Ver Regra 6 do CLAUDE.md.
+  nameKey String
+
+  /// Realm via toSlug(). Aqui remover acento é correto: `area-52` e `Area 52`
+  /// são o mesmo realm em endpoints diferentes da Blizzard.
   realmSlug String
 
   /// Nome como a Blizzard exibe, com acento e capitalização. Só para mostrar.
@@ -96,11 +100,10 @@ model GuildCharacter {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  /// Um personagem aparece uma vez por conta. Slug+realm é a identidade real —
-  /// o nome exibido muda de capitalização entre endpoints da Blizzard.
-  @@unique([userId, realmSlug, slug])
+  /// Um personagem aparece uma vez por conta.
+  @@unique([userId, realmSlug, nameKey])
   @@index([userId])
-  @@index([realmSlug, slug])
+  @@index([realmSlug, nameKey])
 }
 
 /// Sessão com estado no banco, não JWT.

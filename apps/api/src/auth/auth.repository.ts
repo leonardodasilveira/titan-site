@@ -4,8 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 
 /** Personagem da conta que está no roster, como o login acabou de ver. */
 export interface MatchedCharacterInput {
-  /** Normalizados via toSlug() antes de chegar aqui — ver Regra 6. */
-  slug: string;
+  /** Identidade via toCharacterKey() — COM acento. Ver Regra 6. */
+  nameKey: string;
+  /** Realm via toSlug() — aqui remover acento é correto. */
   realmSlug: string;
   /** Nome exibido, com acento e capitalização da Blizzard. */
   name: string;

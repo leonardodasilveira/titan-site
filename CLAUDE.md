@@ -154,11 +154,30 @@ Não existe "bloquear outras regiões" como código separado: a verificação de
 
 **Nunca inferir região de IP, idioma do navegador ou nacionalidade.** Região US não quer dizer jogadores americanos — realms brasileiros (Azralon, Goldrinn, Nemesis, Tol Barad) são região US, e um membro legítimo pode morar na Europa e jogar em US. Filtro por geolocalização barraria membros de verdade.
 
-### Normalização de nomes
+### Normalização de nomes — duas funções, não uma
 
-Realm e nome de personagem **sempre** comparados via `toSlug()` do shared, nunca string crua.
+Nunca compare string crua. Mas **realm e personagem usam funções diferentes**, e trocar uma pela outra é bug silencioso nos dois sentidos.
 
-A Blizzard devolve realm como slug (`area-52`) em alguns endpoints e como nome exibido (`Area 52`) em outros, e nomes vêm com acento e capitalização variável. Comparar string crua faz a verificação de membership falhar **silenciosamente** — o pior tipo de bug aqui, porque parece que funcionou.
+| O quê                        | Função             | Acento     |
+| ---------------------------- | ------------------ | ---------- |
+| Realm                        | `toSlug()`         | remove     |
+| Personagem vindo da API      | `toCharacterKey()` | **mantém** |
+| Nome digitado por uma pessoa | `toSlug()`         | remove     |
+
+**Realm** precisa de `toSlug()` porque a Blizzard devolve `area-52` em alguns endpoints e `Area 52` em outros.
+
+**Personagem vindo da API precisa manter o acento**, porque em WoW é comum nomear alts com variações acentuadas do mesmo nome — e são personagens diferentes, com ranks diferentes. Não é caso raro: no roster da Titan Inc existem 7 grupos assim.
+
+```
+azralon/Shrëwd (rank 5) · Shrêwd (rank 5) · Shrèwd (rank 7)
+azralon/Jöci   (rank 7) · Joci   (rank 5) · Jôci   (rank 7)
+```
+
+Com `toSlug()` os três viram `shrewd`. Num `Map` de lookup só o último sobrevive, e a pessoa passa a ser lida com o rank de um personagem que não é dela — que é justamente o que decide acesso pela Regra 4. Falha em silêncio e parece que funcionou.
+
+`toCharacterKey()` normaliza só o que a Blizzard de fato varia entre endpoints: forma Unicode (NFC) e capitalização.
+
+**Nome digitado em formulário continua no `toSlug()`**: ali tolerar acento é desejável, porque ninguém deve perder um apply por causa de trema.
 
 ## Regra 7 — O site é o registro, o Discord é a interface
 

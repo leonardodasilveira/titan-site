@@ -72,15 +72,14 @@ const LATIN_SPECIALS: Record<string, string> = {
 const LATIN_SPECIALS_RE = new RegExp(`[${Object.keys(LATIN_SPECIALS).join('')}]`, 'g');
 
 /**
- * Normaliza nome de personagem ou realm para comparação.
+ * Normaliza **realm**, ou nome digitado por uma pessoa, para comparação.
  *
  * Necessário porque a Blizzard devolve realm como slug (`area-52`) em alguns
- * endpoints e como nome exibido (`Area 52`) em outros, e nomes de personagem
- * vêm com acentos e capitalização variável. Comparar string crua faz a
- * verificação de membership falhar silenciosamente — ver TIT-19.
+ * endpoints e como nome exibido (`Area 52`) em outros. A meta é ser tolerante
+ * com quem **digita**: "Zecolmeia" tem que casar com "Zécolmeia" do roster.
  *
- * A meta é ser tolerante com quem **digita** o nome: "Zecolmeia" tem que casar
- * com "Zécolmeia" do roster.
+ * NÃO use para identificar personagem vindo da API — remove acento, e acento
+ * distingue personagens diferentes. Use `toCharacterKey`.
  */
 export function toSlug(value: string): string {
   return value
@@ -91,6 +90,35 @@ export function toSlug(value: string): string {
     .replace(LATIN_SPECIALS_RE, (c) => LATIN_SPECIALS[c] ?? c)
     .replace(APOSTROPHES, '')
     .replace(/[\s_]+/g, '-');
+}
+
+/**
+ * Identidade de um personagem vindo da API da Blizzard.
+ *
+ * **Preserva acento de propósito.** Em WoW é comum a mesma pessoa nomear alts
+ * com variações acentuadas do mesmo nome, e são personagens diferentes, com
+ * ranks diferentes. No roster da Titan Inc isso aparece em 7 grupos, entre eles:
+ *
+ * ```
+ * azralon/Shrëwd (rank 5) · Shrêwd (rank 5) · Shrèwd (rank 7)
+ * azralon/Jöci   (rank 7) · Joci   (rank 5) · Jôci   (rank 7)
+ * ```
+ *
+ * Usar `toSlug` aqui colapsa os três em `shrewd`. Num `Map` isso faz o último
+ * sobrescrever os outros, e a pessoa passa a ser lida com o rank de um
+ * personagem que não é dela — o que decide acesso à área interna.
+ *
+ * Só normaliza o que a própria Blizzard varia entre endpoints:
+ *
+ * - **NFC**, porque `ë` pode vir como um code point ou como `e` + combining
+ *   diaeresis, e as duas formas não são iguais em `===`;
+ * - **minúsculas**, porque a capitalização varia.
+ *
+ * Para nome **digitado** por uma pessoa, use `toSlug`: ali a tolerância a
+ * acento é desejável, porque ninguém quer errar apply por causa de trema.
+ */
+export function toCharacterKey(name: string): string {
+  return name.normalize('NFC').trim().toLowerCase();
 }
 
 /**

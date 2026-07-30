@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { toSlug } from '@titan/shared';
+import { toCharacterKey, toSlug } from '@titan/shared';
 import { BlizzardService, type RosterMember } from '../blizzard/blizzard.service';
 import { MembershipRepository } from './membership.repository';
 
@@ -84,7 +84,7 @@ export class MembershipService {
     }
 
     const members = await this.repo.findMembers();
-    const byKey = new Map(roster.members.map((m) => [`${m.realmSlug}/${m.slug}`, m]));
+    const byKey = new Map(roster.members.map((m) => [`${m.realmSlug}/${m.nameKey}`, m]));
 
     const toRevoke: string[] = [];
     const rankChanges: Array<{ id: string; rank: number }> = [];
@@ -106,9 +106,10 @@ export class MembershipService {
       const stillInRoster: Array<{ id: string; rank: number }> = [];
 
       for (const char of user.characters) {
-        // toSlug dos dois lados, sempre — ver Regra 6 do CLAUDE.md. Os campos já
-        // são gravados normalizados; isto protege de linha escrita à mão.
-        const hit = byKey.get(`${toSlug(char.realmSlug)}/${toSlug(char.slug)}`);
+        // Normalizar dos dois lados, sempre — ver Regra 6 do CLAUDE.md. Os
+        // campos já são gravados normalizados; isto protege de linha escrita à
+        // mão. Nome usa toCharacterKey (mantém acento), realm usa toSlug.
+        const hit = byKey.get(`${toSlug(char.realmSlug)}/${toCharacterKey(char.nameKey)}`);
 
         if (!hit) {
           charactersGone.push(char.id);

@@ -79,7 +79,7 @@ export class AuthService {
 
     // Interseção por slug normalizado. Comparar string crua falharia
     // silenciosamente com nomes acentuados — ver toSlug no shared.
-    const rosterBySlug = new Map(roster.map((m) => [`${m.realmSlug}/${m.slug}`, m]));
+    const rosterByKey = new Map(roster.map((m) => [`${m.realmSlug}/${m.nameKey}`, m]));
 
     // TODOS os personagens da conta que estão no roster, não só o melhor.
     //
@@ -88,10 +88,10 @@ export class AuthService {
     // outros ainda dentro. Ver Regra 4 do CLAUDE.md.
     const matched: MatchedCharacterInput[] = [];
     for (const char of characters) {
-      const hit = rosterBySlug.get(`${char.realmSlug}/${char.slug}`);
+      const hit = rosterByKey.get(`${char.realmSlug}/${char.nameKey}`);
       if (hit) {
         matched.push({
-          slug: char.slug,
+          nameKey: char.nameKey,
           realmSlug: char.realmSlug,
           name: hit.name,
           rank: hit.rank,

@@ -8,17 +8,17 @@ import { MembershipService } from './membership.service';
 
 // Dados fictícios de propósito: nada de nome real de membro em fixture — ver
 // a seção de segredos do CLAUDE.md.
-const rosterMember = (slug: string, realmSlug: string, rank: number): RosterMember => ({
-  name: slug,
-  slug,
+const rosterMember = (name: string, realmSlug: string, rank: number): RosterMember => ({
+  name,
+  nameKey: name.toLowerCase(),
   realmSlug,
   rank,
 });
 
 /** Personagem guardado no banco. `rank` é o que a última rodada viu. */
-const dbChar = (slug: string, rank: number, realmSlug = 'azralon'): CharacterToRevalidate => ({
-  id: `char-${slug}`,
-  slug,
+const dbChar = (name: string, rank: number, realmSlug = 'azralon'): CharacterToRevalidate => ({
+  id: `char-${name.toLowerCase()}`,
+  nameKey: name.toLowerCase(),
   realmSlug,
   rank,
 });
@@ -161,15 +161,15 @@ describe('MembershipService', () => {
     expect(repo.updateRank).not.toHaveBeenCalled();
   });
 
-  it('compara personagem e realm normalizados, não string crua', async () => {
-    // Linha escrita à mão no banco, com acento e maiúscula. Comparação crua
-    // falharia aqui — silenciosamente, revogando um membro de verdade.
+  it('compara realm normalizado, não string crua', async () => {
+    // Linha escrita à mão no banco, com o realm como nome exibido. Comparação
+    // crua falharia — silenciosamente, revogando um membro de verdade.
     blizzard.getGuildRosterSnapshot.mockResolvedValue(
       snapshot([rosterMember('valdrakken', 'area-52', 3)]),
     );
     repo.findMembers.mockResolvedValue([
       dbMember({
-        id: 'acentuado',
+        id: 'realm-cru',
         guildRank: 3,
         characters: [dbChar('Valdrakken', 3, 'Area 52')],
       }),
@@ -179,6 +179,29 @@ describe('MembershipService', () => {
 
     expect(repo.revokeMembership).toHaveBeenCalledWith([]);
     expect(result).toMatchObject({ revoked: 0 });
+  });
+
+  it('não confunde personagens que só diferem por acento', async () => {
+    // Caso real do roster: Shrëwd (rank 5) e Shrèwd (rank 7) são pessoas
+    // diferentes. Com a chave sem acento os dois colapsavam em "shrewd", e o
+    // Map deixava só o último — quem é rank 5 era lido como rank 7 e perdia o
+    // acesso à área interna.
+    blizzard.getGuildRosterSnapshot.mockResolvedValue(
+      snapshot([
+        rosterMember('Shrëwd', 'azralon', 5),
+        rosterMember('Shrêwd', 'azralon', 5),
+        rosterMember('Shrèwd', 'azralon', 7),
+      ]),
+    );
+    repo.findMembers.mockResolvedValue([
+      dbMember({ id: 'acentuado', guildRank: 5, characters: [dbChar('Shrëwd', 5)] }),
+    ]);
+
+    const result = await service.revalidateAll();
+
+    expect(repo.revokeMembership).toHaveBeenCalledWith([]);
+    expect(repo.updateRank).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ revoked: 0, ranksUpdated: 0 });
   });
 
   describe('conta com vários personagens', () => {

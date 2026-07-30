@@ -4,7 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 /** Personagem, como o job precisa dele para conferir contra o roster. */
 export interface CharacterToRevalidate {
   id: string;
-  slug: string;
+  /** Identidade via toCharacterKey() — COM acento. Ver Regra 6. */
+  nameKey: string;
   realmSlug: string;
   rank: number;
 }
@@ -31,7 +32,7 @@ export class MembershipRepository {
         id: true,
         guildRank: true,
         characters: {
-          select: { id: true, slug: true, realmSlug: true, rank: true },
+          select: { id: true, nameKey: true, realmSlug: true, rank: true },
         },
       },
     });

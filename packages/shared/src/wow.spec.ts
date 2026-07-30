@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toSlug } from './wow.js';
+import { toCharacterKey, toSlug } from './wow.js';
 
 describe('toSlug', () => {
   it('normaliza caixa e espaços', () => {
@@ -52,5 +52,33 @@ describe('toSlug', () => {
     for (const nome of ['Håøkåh', 'Zécolmeia', "Cho'gall", 'Área 52']) {
       expect(toSlug(toSlug(nome))).toBe(toSlug(nome));
     }
+  });
+});
+
+describe('toCharacterKey', () => {
+  it('mantém acento — nomes acentuados são personagens DIFERENTES', () => {
+    // Caso real do roster: três personagens distintos, ranks distintos.
+    // Colapsar em "shrewd" faria o rank de um vazar para o outro.
+    const chaves = new Set(['Shrëwd', 'Shrêwd', 'Shrèwd'].map(toCharacterKey));
+    expect(chaves.size).toBe(3);
+  });
+
+  it('toSlug colapsaria os três — é por isso que esta função existe', () => {
+    const chaves = new Set(['Shrëwd', 'Shrêwd', 'Shrèwd'].map(toSlug));
+    expect(chaves.size).toBe(1);
+  });
+
+  it('normaliza capitalização', () => {
+    expect(toCharacterKey('Zenithus')).toBe(toCharacterKey('zEnItHuS'));
+  });
+
+  it('trata as duas formas Unicode do mesmo acento como iguais', () => {
+    // 'ë' pode vir composto (U+00EB) ou decomposto ('e' + U+0308). Sem NFC,
+    // as duas formas não são iguais em ===, e o mesmo personagem viraria dois.
+    expect(toCharacterKey('Shrëwd')).toBe(toCharacterKey('Shrëwd'));
+  });
+
+  it('ignora espaço em volta', () => {
+    expect(toCharacterKey('  Joci  ')).toBe('joci');
   });
 });
