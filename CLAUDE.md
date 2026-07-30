@@ -153,13 +153,15 @@ O CI (`.github/workflows/ci.yml`) roda no PR: formatação, lint, build, typeche
 
 Review do outro dev é bem-vindo, mas não obrigatório — em dupla, review obrigatório trava quando um dos dois está offline.
 
-Antes de abrir PR, rodar localmente o que o CI roda:
+Antes de abrir PR, rodar localmente o que o CI roda, **nesta ordem**:
 
 ```bash
-pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test
+pnpm format:check && pnpm build && pnpm lint && pnpm typecheck && pnpm test
 ```
 
-`pnpm build` **antes** de `pnpm typecheck`: o `packages/shared` precisa estar compilado para os apps resolverem os tipos dele.
+`pnpm build` vem **primeiro** porque lint e typecheck dependem do `packages/shared` compilado. O typecheck por motivo óbvio; o lint porque as regras do `typescript-eslint` são type-aware — sem o `dist`, tudo que vem do `@titan/shared` resolve como tipo de erro e o lint acusa `no-unsafe-*` em código correto.
+
+Localmente a ordem errada passa, porque o `dist` sobrou de um build anterior. Só quebra em clone limpo, ou seja, só no CI.
 
 ## Segredos
 
