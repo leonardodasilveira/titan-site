@@ -71,19 +71,49 @@ src/applications/
 - Regra de negócio no **service**, nunca no controller.
 - `PrismaClient` só no **repository**. Nenhum service importa Prisma direto.
 
-## Regra 4 — Acesso é binário (por enquanto)
+## Regra 4 — Acesso por rank, agregado por pessoa
 
-**Membro da guilda vê a área interna. Não-membro só pode dar apply.** É isso.
+**Três estados, não dois:**
 
-Não existe hierarquia de permissão por rank do jogo. O roster mistura alts, raiders e social, e a liderança ainda não decidiu onde termina "oficial" — modelar hierarquia agora seria escolher errado e migrar depois.
+| Estado            | Quem é                          | Área interna | Formulário de apply |
+| ----------------- | ------------------------------- | ------------ | ------------------- |
+| não-membro        | nenhum personagem no roster     | não          | **sim**             |
+| membro sem acesso | no roster, rank acima do corte  | não          | não                 |
+| membro            | no roster, rank dentro do corte | **sim**      | não                 |
 
-O `guildRank` é **gravado mas nunca usado** para decidir permissão. Registro histórico, para quando a hierarquia existir de verdade. Use `canAccessInternalArea()` do shared, nunca compare rank.
+O corte é por `guildRank`, vindo de `GUILD_RANK_ACCESS_MAX`. **Rank 1 é o mais alto**, então o teste é `rank <= corte` — menor número, mais poder. Use `canAccessInternalArea()` do shared; nunca escreva o número na regra de negócio.
+
+O estado do meio existe por um motivo específico: um social que está na guilda há dois anos não pode receber a tela de "candidate-se para entrar na guilda". Colapsar ele em não-membro é ofensivo e faz o site parecer quebrado.
+
+### Por pessoa, não por personagem
+
+Uma conta tem **N personagens** no roster. O rank da pessoa é o **melhor** (menor número) entre todos eles.
+
+Isso não é refinamento, é correção: quem verifica um personagem só revoga acesso de membro legítimo quando um alt sai da guilda. O erro é silencioso — ninguém recebe erro, a pessoa só descobre que perdeu o acesso.
+
+Pela mesma razão, só perde membership quem **não tem nenhum** personagem no roster.
+
+### Isto reverteu uma decisão anterior
+
+Até 30/07/2026 o acesso era binário e `guildRank` era gravado mas nunca usado, porque o roster misturava alts, raiders e social e ninguém tinha decidido onde termina "oficial".
+
+A liderança reorganizou os ranks da guilda. A premissa caiu, e a regra mudou junto. Registrado aqui em vez de apagado, para ninguém refazer o raciocínio antigo achando que é novo.
+
+### O rank é posicional — cuidado permanente
+
+`rank` é a **posição** do rank na lista da guilda, não uma identidade. Se a liderança inserir ou reordenar um rank no jogo, o número 4 passa a significar outra coisa e o acesso muda sozinho, **sem erro nenhum**.
+
+E não dá para detectar automaticamente: o roster da Blizzard devolve `rank` só como número, sem nome. O único alarme possível é a distribuição — o job de revalidação loga quantos membros há por rank, e uma mudança brusca é o sinal de que a régua mudou.
+
+Por isso o corte é configuração, nunca constante no código.
 
 ### A exceção: painel de candidaturas
 
-Candidatura contém Discord tag, Battle.tag e texto que a pessoa escreveu esperando que só a liderança lesse. Se qualquer um dos ~374 membros do roster puder abrir isso, é vazamento.
+Candidatura contém Discord tag, Battle.tag e texto que a pessoa escreveu esperando que só a liderança lesse. Se qualquer um dos ~590 membros do roster puder abrir isso, é vazamento.
 
 Então o painel é gated por `isOfficer`, uma flag **manual**, atribuída à mão a poucas pessoas. Deliberadamente **não** derivada do rank: errar o mapeamento para cima expõe dado pessoal de centenas de candidatos.
+
+Isso continua valendo **mesmo agora que o rank decide o acesso à área interna**. São dois gates independentes de propósito: passar do corte te dá a área interna, não a caixa de entrada do recrutamento. Um raider dentro do corte não vê candidatura.
 
 Use `canReviewApplications()`. Ela exige membership **e** a flag — sair da guilda derruba o acesso mesmo que ninguém lembre de desligar a flag.
 
