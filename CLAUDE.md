@@ -112,7 +112,11 @@ A liderança reorganizou os ranks da guilda. A premissa caiu, e a regra mudou ju
 
 `rank` é a **posição** do rank na lista da guilda, não uma identidade. Se a liderança inserir ou reordenar um rank no jogo, o número 4 passa a significar outra coisa e o acesso muda sozinho, **sem erro nenhum**.
 
-E não dá para detectar automaticamente: o roster da Blizzard devolve `rank` só como número, sem nome. O único alarme possível é a distribuição — o job de revalidação loga quantos membros há por rank, e uma mudança brusca é o sinal de que a régua mudou.
+E não dá para detectar automaticamente: o roster da Blizzard devolve `rank` só como número, sem nome.
+
+**O que segura a régua é a definição combinada, não o código: rank 4 é Raider.** Reorganizar ranks no jogo é uma decisão da liderança, e ela vem junto com revisar este corte.
+
+O job loga a distribuição por rank a cada rodada, mas isso é **registro, não alarme**: com ~590 membros a contagem oscila toda semana com entrada e saída, então variação não significa nada. O valor é forense — se um dia o acesso ficar estranho, o histórico mostra em que rodada a estrutura mudou de formato.
 
 Por isso o corte é configuração, nunca constante no código.
 
