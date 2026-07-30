@@ -56,8 +56,9 @@ export const sessionUserSchema = z.object({
   /**
    * Quando a membership foi confirmada contra o roster pela última vez.
    *
-   * Sem revalidação periódica, quem sai da guilda mantém acesso para sempre.
-   * Ver TIT-19.
+   * Atualizado no login e pelo job de revalidação, que roda a cada 6h e derruba
+   * as sessões de quem saiu da guilda (TIT-25). Sem esse job, quem sai e não
+   * desloga mantém acesso para sempre.
    */
   verifiedAt: z.string().datetime().nullable(),
 });
