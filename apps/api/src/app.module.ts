@@ -1,14 +1,26 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { BlizzardModule } from './blizzard/blizzard.module';
 import { HealthModule } from './health/health.module';
 import { InternalModule } from './internal/internal.module';
+import { MembershipModule } from './membership/membership.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule, BlizzardModule, AuthModule, InternalModule, HealthModule],
+  imports: [
+    // Sem forRoot() os @Cron não são registrados e o job simplesmente nunca roda,
+    // sem erro nenhum.
+    ScheduleModule.forRoot(),
+    PrismaModule,
+    BlizzardModule,
+    AuthModule,
+    InternalModule,
+    MembershipModule,
+    HealthModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
