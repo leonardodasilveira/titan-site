@@ -112,7 +112,9 @@ pnpm build                # todos, na ordem de dependência
 
 ## Fluxo de git
 
-`main` é protegida: nada de push direto, nada de force-push. Todo trabalho entra por PR.
+Repo: https://github.com/leonardodasilveira/titan-site (público)
+
+`main` é protegida por ruleset: nada de push direto, nada de force-push, nada de deletar a branch, e o check `verify` do CI é obrigatório. Todo trabalho entra por PR.
 
 ```bash
 git switch -c leonardodasilveira/tit-15-formulario-de-apply-em-apply
@@ -137,9 +139,17 @@ pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test
 
 ## Segredos
 
-Nada de credencial no repositório. Tudo em `.env` local, documentado em `.env.example`.
+**Este repositório é público.** Segredo commitado aqui está exposto no instante do push, e apagar depois não resolve — o histórico do git guarda, e forks e scrapers podem já ter copiado.
 
-Nunca commitar: `DATABASE_URL`, `BLIZZARD_CLIENT_ID`, `BLIZZARD_CLIENT_SECRET`, `SESSION_SECRET`, `DISCORD_WEBHOOK_URL`.
+Nada de credencial no repositório. Tudo em `.env` local, documentado em `.env.example` com valores vazios.
+
+Nunca commitar: `DATABASE_URL` de produção, `BLIZZARD_CLIENT_ID`, `BLIZZARD_CLIENT_SECRET`, `SESSION_SECRET`, `DISCORD_WEBHOOK_URL`.
+
+Se um segredo escapar: **tratar como comprometido e rotacionar na origem** (gerar novo secret no portal da Blizzard, novo webhook no Discord). Remover do histórico é limpeza, não conserto — o valor antigo tem que morrer.
+
+Também não versionar dado de membro ou candidatura: nada de dump de banco, print com Discord tag, ou fixture com nome real de pessoa. Usar dados fictícios em teste.
+
+O `.env.example` pode ter placeholder local (`postgresql://titan:titan@localhost:5432/...`) — é credencial de banco de desenvolvimento na sua máquina, não vale nada fora dela. Nunca colocar ali um valor que funcione em produção.
 
 ## Aviso sobre o Next 16
 
