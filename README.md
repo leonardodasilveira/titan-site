@@ -3,7 +3,10 @@
 Landing pública com formulário de apply + área interna para guild management.
 
 Planejamento: projeto **Site da Guilda** no Linear (time `TIT`).
-Convenções de arquitetura: [`CLAUDE.md`](./CLAUDE.md).
+Convenções de arquitetura e fluxo de git: [`CLAUDE.md`](./CLAUDE.md).
+
+> Repositório **público**. Nenhuma credencial ou dado de membro pode ser versionado —
+> ver a seção de segredos no `CLAUDE.md`.
 
 ## Stack
 
