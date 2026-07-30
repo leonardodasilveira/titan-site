@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { toSlug, type Region } from '@titan/shared';
 import { loadGuildConfig, type GuildConfig } from '../config/guild.config';
 
@@ -30,7 +30,7 @@ interface TokenResponse {
  * cache tem que ficar num lugar só.
  */
 @Injectable()
-export class BlizzardService {
+export class BlizzardService implements OnModuleInit {
   private readonly logger = new Logger(BlizzardService.name);
   private readonly guild: GuildConfig;
   private readonly region: Region;
@@ -44,6 +44,29 @@ export class BlizzardService {
   constructor() {
     this.guild = loadGuildConfig();
     this.region = this.guild.region;
+  }
+
+  /**
+   * Aquece token e roster no boot.
+   *
+   * Medido: o token custa ~1,1s e o roster ~1,0s (337 KB, 590 membros). Nenhum
+   * dos dois depende do usuário, então pagar isso durante o callback do login
+   * é desperdício — a pessoa fica olhando tela em branco enquanto o servidor
+   * busca dados que já poderiam estar em memória.
+   *
+   * Não bloqueia o boot e não derruba a aplicação se falhar: sem aquecimento o
+   * primeiro login só fica lento, o que é degradação aceitável.
+   */
+  onModuleInit(): void {
+    void this.getGuildRoster()
+      .then((members) => this.logger.log(`Cache aquecido no boot: ${members.length} membros`))
+      .catch((err: unknown) =>
+        this.logger.warn(
+          `Não foi possível aquecer o cache no boot (o primeiro login ficará lento): ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        ),
+      );
   }
 
   private get apiHost(): string {

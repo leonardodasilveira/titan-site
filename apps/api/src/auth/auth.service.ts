@@ -35,13 +35,23 @@ export class AuthService {
     code: string,
     redirectUri: string,
   ): Promise<{ sessionId: string; user: User }> {
-    const userToken = await this.blizzard.exchangeCodeForUserToken(code, redirectUri);
-    const account = await this.blizzard.getAccountInfo(userToken);
+    const startedAt = Date.now();
 
-    const [characters, roster] = await Promise.all([
+    const userToken = await this.blizzard.exchangeCodeForUserToken(code, redirectUri);
+    const afterToken = Date.now();
+
+    // As três em paralelo: só a troca do code é sequencial (as outras dependem
+    // do token). Antes o userinfo rodava sozinho antes das outras duas, somando
+    // uma ida e volta à Blizzard sem motivo.
+    //
+    // O roster normalmente vem do cache aquecido no boot; só a primeira chamada
+    // depois de 6h paga a rede.
+    const [account, characters, roster] = await Promise.all([
+      this.blizzard.getAccountInfo(userToken),
       this.blizzard.getAccountCharacters(userToken),
       this.blizzard.getGuildRoster(),
     ]);
+    const afterProfile = Date.now();
 
     // Interseção por slug normalizado. Comparar string crua falharia
     // silenciosamente com nomes acentuados — ver toSlug no shared.
@@ -69,12 +79,20 @@ export class AuthService {
       matchedCharacterRealm: matched?.character.realmSlug ?? null,
     });
 
-    this.logger.log(
-      `Login: ${account.battletag} — ${matched ? `membro (rank ${matched.member.rank})` : 'não-membro'}, ${characters.length} personagem(ns) na conta`,
-    );
-
     const sessionId = this.createOpaqueToken();
     await this.repo.createSession(sessionId, user.id, new Date(Date.now() + SESSION_TTL_MS));
+
+    // Loga o id interno, NÃO o battletag: battletag é dado pessoal, e em
+    // produção log costuma ir para serviço de terceiro.
+    //
+    // Os tempos existem porque o callback é a única parte do fluxo que a pessoa
+    // espera olhando tela em branco. Sem medição, "está lento" vira chute.
+    this.logger.log(
+      `Login user=${user.id} ${matched ? `membro rank=${matched.member.rank}` : 'não-membro'} ` +
+        `chars=${characters.length} ` +
+        `(token ${afterToken - startedAt}ms, perfil+roster ${afterProfile - afterToken}ms, ` +
+        `total ${Date.now() - startedAt}ms)`,
+    );
 
     // Oportunístico: evita a tabela crescer sem limite sem precisar de job.
     void this.repo.deleteExpiredSessions().catch(() => undefined);
