@@ -7,6 +7,17 @@ import { z } from 'zod';
  * validação de formulário, filtros de roster e mapeamento das APIs da Blizzard.
  */
 
+/**
+ * Regiões da Blizzard. O enum completo existe porque os endpoints são por
+ * região e o valor precisa ser tipado — não porque o site atenda todas.
+ *
+ * A guilda é **exclusivamente US**, então a região é configuração fixa do
+ * servidor (`BLIZZARD_REGION`), nunca escolha de quem preenche formulário.
+ *
+ * Cuidado: região US ≠ jogadores americanos. Realms brasileiros (Azralon,
+ * Goldrinn, Nemesis, Tol Barad…) são região US. Nunca inferir região a partir
+ * de IP, idioma do navegador ou nacionalidade — só do realm do personagem.
+ */
 export const REGIONS = ['us', 'eu', 'kr', 'tw', 'cn'] as const;
 export const regionSchema = z.enum(REGIONS);
 export type Region = z.infer<typeof regionSchema>;
@@ -55,10 +66,26 @@ export function toSlug(value: string): string {
     .replace(/[\s_]+/g, '-');
 }
 
-/** Identidade de um personagem, do jeito que as APIs da Blizzard esperam. */
+/**
+ * Identidade de um personagem, do jeito que as APIs da Blizzard esperam
+ * (região inclusa, porque o endpoint depende dela).
+ *
+ * Para entrada de usuário, use `characterInputSchema` — quem preenche
+ * formulário não escolhe região.
+ */
 export const characterRefSchema = z.object({
   name: z.string().min(2).max(12),
   realm: z.string().min(2).max(64),
   region: regionSchema,
 });
 export type CharacterRef = z.infer<typeof characterRefSchema>;
+
+/**
+ * Identidade de personagem vinda de formulário: sem região.
+ *
+ * A região é preenchida pelo servidor a partir da config da guilda. Deixar o
+ * candidato escolher entre 5 regiões só cria um jeito de errar: ele marca "eu",
+ * a busca do personagem falha, e a mensagem de erro não explica o porquê.
+ */
+export const characterInputSchema = characterRefSchema.omit({ region: true });
+export type CharacterInput = z.infer<typeof characterInputSchema>;

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { characterRefSchema, roleSchema, wowClassSchema } from './wow.js';
+import { characterInputSchema, roleSchema, wowClassSchema } from './wow.js';
 
 /**
  * Contrato da candidatura (apply).
@@ -12,7 +12,9 @@ import { characterRefSchema, roleSchema, wowClassSchema } from './wow.js';
  * esses campos em nenhum dos apps.
  */
 export const createApplicationSchema = z.object({
-  character: characterRefSchema,
+  // Sem região: a guilda é US-only e o servidor preenche isso. Ver
+  // characterInputSchema em wow.ts.
+  character: characterInputSchema,
   class: wowClassSchema,
   mainRole: roleSchema,
   offRole: roleSchema.optional(),

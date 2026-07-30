@@ -87,6 +87,14 @@ Blizzard, Raider.IO e WarcraftLogs são chamadas **só pelo Nest**, nunca pelo b
 - O cache tem que ficar em um lugar só. Sem cache, cada visita na home queima rate limit — e o dado muda no máximo uma vez por semana.
 - Falha de API externa não pode derrubar página: degradar para o último dado bom ou esconder a seção.
 
+### Região: US, fixa
+
+A guilda é **exclusivamente região US**. A região vem de `BLIZZARD_REGION` e de nenhum outro lugar — nenhum formulário do site pergunta região, e `createApplicationSchema` usa `characterInputSchema` (sem região) justamente por isso.
+
+Não existe "bloquear outras regiões" como código separado: a verificação de membership é a interseção com o roster da guilda, que só existe em US. Conta de outra região não tem personagem nesse roster e já não entra.
+
+**Nunca inferir região de IP, idioma do navegador ou nacionalidade.** Região US não quer dizer jogadores americanos — realms brasileiros (Azralon, Goldrinn, Nemesis, Tol Barad) são região US, e um membro legítimo pode morar na Europa e jogar em US. Filtro por geolocalização barraria membros de verdade.
+
 ### Normalização de nomes
 
 Realm e nome de personagem **sempre** comparados via `toSlug()` do shared, nunca string crua.
