@@ -1,12 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Personagem, como o job precisa dele para conferir contra o roster. */
+export interface CharacterToRevalidate {
+  id: string;
+  slug: string;
+  realmSlug: string;
+  rank: number;
+}
+
 /** O que o job precisa saber de cada membro. Nada de battletag: não é usado aqui. */
 export interface MemberToRevalidate {
   id: string;
   guildRank: number | null;
-  matchedCharacterSlug: string | null;
-  matchedCharacterRealm: string | null;
+  characters: CharacterToRevalidate[];
 }
 
 /**
@@ -16,15 +23,16 @@ export interface MemberToRevalidate {
 export class MembershipRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Todo mundo que hoje tem acesso à área interna. */
+  /** Todo mundo que hoje tem personagem no roster, com os personagens junto. */
   findMembers(): Promise<MemberToRevalidate[]> {
     return this.prisma.user.findMany({
       where: { membership: 'member' },
       select: {
         id: true,
         guildRank: true,
-        matchedCharacterSlug: true,
-        matchedCharacterRealm: true,
+        characters: {
+          select: { id: true, slug: true, realmSlug: true, rank: true },
+        },
       },
     });
   }
@@ -34,8 +42,8 @@ export class MembershipRepository {
    *
    * Os dois passos juntos porque separados abrem uma janela: entre marcar
    * not_member e apagar a sessão, um crash deixaria o ex-membro dentro com uma
-   * sessão válida que nenhuma rodada futura do job iria olhar de novo — o job
-   * só varre quem ainda é `member`.
+   * sessão válida que nenhuma rodada futura iria olhar de novo — o job só varre
+   * quem ainda é `member`.
    *
    * Apagar a sessão é o que corta o acesso na hora. É exatamente para isso que
    * a sessão tem estado no banco em vez de ser JWT.
@@ -62,7 +70,27 @@ export class MembershipRepository {
     return sessions.count;
   }
 
-  /** Promoção/rebaixamento no jogo refletido no site. */
+  /**
+   * Remove personagens que saíram da guilda.
+   *
+   * Só o personagem sai — a conta continua membro se ainda tiver outro no
+   * roster. É essa distinção que evita revogar acesso de quem tirou um alt.
+   */
+  async deleteCharacters(characterIds: string[]): Promise<number> {
+    if (characterIds.length === 0) return 0;
+
+    const result = await this.prisma.guildCharacter.deleteMany({
+      where: { id: { in: characterIds } },
+    });
+    return result.count;
+  }
+
+  /** Promoção/rebaixamento de um personagem específico refletido no site. */
+  async updateCharacterRank(characterId: string, rank: number): Promise<void> {
+    await this.prisma.guildCharacter.update({ where: { id: characterId }, data: { rank } });
+  }
+
+  /** Novo melhor rank da conta, depois de olhar todos os personagens dela. */
   async updateRank(userId: string, guildRank: number): Promise<void> {
     await this.prisma.user.update({
       where: { id: userId },
@@ -70,7 +98,7 @@ export class MembershipRepository {
     });
   }
 
-  /** Marca "conferido agora" para quem continua membro sem mudança de rank. */
+  /** Marca "conferido agora" para quem continua igual. */
   async touchVerified(userIds: string[]): Promise<void> {
     if (userIds.length === 0) return;
     await this.prisma.user.updateMany({
