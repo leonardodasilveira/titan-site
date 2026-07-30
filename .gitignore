@@ -5,9 +5,14 @@ build/
 out/
 
 # Env — nunca commitar. Ver .env.example
+#
+# Padrão amplo de propósito: qualquer .env com sufixo (.bak, .old, .save, cópia
+# de editor) contém os mesmos segredos que o original. Este repositório é
+# público, então um backup esquecido vaza igual.
+# A exceção explícita mantém o .env.example versionado.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Prisma
 *.db

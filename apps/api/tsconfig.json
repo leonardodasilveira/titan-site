@@ -25,5 +25,8 @@
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true
   },
-  "exclude": ["node_modules", "dist"]
+  // prisma.config.ts é carregado pelo CLI do Prisma, não pelo app. Ele usa
+  // `import.meta`, que não existe na saída CommonJS do Nest — se entrar no
+  // build, o tsc falha com TS1470.
+  "exclude": ["node_modules", "dist", "prisma.config.ts"]
 }

@@ -1,0 +1,82 @@
+// Ver CLAUDE.md para as regras de arquitetura.
+// Acesso a este client SÓ via repository de módulo — nenhum service importa
+// PrismaClient direto.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// A connection string vive em prisma.config.ts — a partir do Prisma 7 o campo
+// `url` não é mais aceito aqui.
+datasource db {
+  provider = "postgresql"
+}
+
+/// Estado de membership na guilda. Acesso é binário — ver Regra 4 do CLAUDE.md.
+enum Membership {
+  member
+  not_member
+}
+
+/// Conta Battle.net que já fez login pelo menos uma vez.
+///
+/// Não guarda senha (o login é OAuth) nem token da Blizzard.
+model User {
+  id String @id @default(cuid())
+
+  /// `sub` do token da Blizzard. Identificador estável da conta Battle.net,
+  /// diferente do battletag, que a pessoa pode trocar.
+  battlenetId String @unique
+
+  /// Nome#1234. Muda quando a pessoa troca, então é só exibição.
+  battletag String
+
+  membership Membership @default(not_member)
+
+  /// Acesso a dado pessoal de candidatos. Atribuído à MÃO, deliberadamente não
+  /// derivado do rank do jogo — ver Regra 4 do CLAUDE.md.
+  isOfficer Boolean @default(false)
+
+  /// Rank no roster na última verificação. Registro histórico: NÃO usar para
+  /// decidir permissão.
+  guildRank Int?
+
+  /// Personagem que casou com o roster, normalizado via toSlug().
+  ///
+  /// Guardar isto é o que permite revalidar membership periodicamente usando
+  /// só a credencial da aplicação (client credentials): basta checar se este
+  /// personagem continua no roster. Sem isso, revalidar exigiria guardar o
+  /// refresh token do usuário — mais um segredo para proteger, sem ganho.
+  matchedCharacterSlug  String?
+  matchedCharacterName  String?
+  matchedCharacterRealm String?
+
+  /// Última confirmação contra o roster. Nulo = nunca verificado.
+  verifiedAt DateTime?
+
+  sessions Session[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([matchedCharacterSlug])
+}
+
+/// Sessão com estado no banco, não JWT.
+///
+/// É o que permite cortar acesso na hora quando alguém sai da guilda. Com JWT
+/// sem revogação, um ex-membro continuaria dentro até o token expirar.
+model Session {
+  /// Valor aleatório que vai no cookie httpOnly. Nunca previsível.
+  id String @id
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([expiresAt])
+}

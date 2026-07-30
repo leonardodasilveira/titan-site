@@ -71,7 +71,23 @@ src/applications/
 - Regra de negócio no **service**, nunca no controller.
 - `PrismaClient` só no **repository**. Nenhum service importa Prisma direto.
 
-## Regra 4 — Autorização é no Nest, sempre
+## Regra 4 — Acesso é binário (por enquanto)
+
+**Membro da guilda vê a área interna. Não-membro só pode dar apply.** É isso.
+
+Não existe hierarquia de permissão por rank do jogo. O roster mistura alts, raiders e social, e a liderança ainda não decidiu onde termina "oficial" — modelar hierarquia agora seria escolher errado e migrar depois.
+
+O `guildRank` é **gravado mas nunca usado** para decidir permissão. Registro histórico, para quando a hierarquia existir de verdade. Use `canAccessInternalArea()` do shared, nunca compare rank.
+
+### A exceção: painel de candidaturas
+
+Candidatura contém Discord tag, Battle.tag e texto que a pessoa escreveu esperando que só a liderança lesse. Se qualquer um dos ~374 membros do roster puder abrir isso, é vazamento.
+
+Então o painel é gated por `isOfficer`, uma flag **manual**, atribuída à mão a poucas pessoas. Deliberadamente **não** derivada do rank: errar o mapeamento para cima expõe dado pessoal de centenas de candidatos.
+
+Use `canReviewApplications()`. Ela exige membership **e** a flag — sair da guilda derruba o acesso mesmo que ninguém lembre de desligar a flag.
+
+## Regra 5 — Autorização é no Nest, sempre
 
 O middleware do Next que protege `/interno/*` é **UX, não segurança**. Ele evita tela quebrada.
 
@@ -79,13 +95,21 @@ Todo endpoint interno precisa do seu próprio guard no Nest. Um endpoint que dep
 
 Ao criar endpoint interno, o teste não é "a UI esconde?" — é "chamado sem cookie devolve 401?".
 
-## Regra 5 — Chamadas a APIs externas
+## Regra 6 — Chamadas a APIs externas
 
 Blizzard, Raider.IO e WarcraftLogs são chamadas **só pelo Nest**, nunca pelo browser.
 
 - As credenciais da Blizzard não podem ir para o bundle do front.
 - O cache tem que ficar em um lugar só. Sem cache, cada visita na home queima rate limit — e o dado muda no máximo uma vez por semana.
 - Falha de API externa não pode derrubar página: degradar para o último dado bom ou esconder a seção.
+
+### Região: US, fixa
+
+A guilda é **exclusivamente região US**. A região vem de `BLIZZARD_REGION` e de nenhum outro lugar — nenhum formulário do site pergunta região, e `createApplicationSchema` usa `characterInputSchema` (sem região) justamente por isso.
+
+Não existe "bloquear outras regiões" como código separado: a verificação de membership é a interseção com o roster da guilda, que só existe em US. Conta de outra região não tem personagem nesse roster e já não entra.
+
+**Nunca inferir região de IP, idioma do navegador ou nacionalidade.** Região US não quer dizer jogadores americanos — realms brasileiros (Azralon, Goldrinn, Nemesis, Tol Barad) são região US, e um membro legítimo pode morar na Europa e jogar em US. Filtro por geolocalização barraria membros de verdade.
 
 ### Normalização de nomes
 
@@ -129,13 +153,17 @@ O CI (`.github/workflows/ci.yml`) roda no PR: formatação, lint, build, typeche
 
 Review do outro dev é bem-vindo, mas não obrigatório — em dupla, review obrigatório trava quando um dos dois está offline.
 
-Antes de abrir PR, rodar localmente o que o CI roda:
+Antes de abrir PR, rodar localmente o que o CI roda, **nesta ordem**:
 
 ```bash
-pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test
+pnpm format:check && pnpm build && pnpm lint && pnpm typecheck && pnpm test
 ```
 
-`pnpm build` **antes** de `pnpm typecheck`: o `packages/shared` precisa estar compilado para os apps resolverem os tipos dele.
+**Pare o `pnpm dev` antes de rodar `pnpm build`.** Os dois escrevem em `apps/api/dist`: o build limpa o diretório e o watch morre com `Cannot find module dist/main`, que não sugere a causa.
+
+`pnpm build` vem **primeiro** porque lint e typecheck dependem do `packages/shared` compilado. O typecheck por motivo óbvio; o lint porque as regras do `typescript-eslint` são type-aware — sem o `dist`, tudo que vem do `@titan/shared` resolve como tipo de erro e o lint acusa `no-unsafe-*` em código correto.
+
+Localmente a ordem errada passa, porque o `dist` sobrou de um build anterior. Só quebra em clone limpo, ou seja, só no CI.
 
 ## Segredos
 

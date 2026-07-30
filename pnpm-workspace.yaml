@@ -6,7 +6,11 @@ packages:
 # - esbuild: motor do tsup, que compila o packages/shared
 # - sharp: otimização de imagem do Next
 # - unrs-resolver: resolver de imports do ESLint
+# - prisma / @prisma/engines: baixam os engines nativos de query e migration.
+#   Sem eles o Prisma não conecta em banco nenhum.
 allowBuilds:
+  '@prisma/engines': true
   esbuild: true
+  prisma: true
   sharp: true
   unrs-resolver: true

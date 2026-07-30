@@ -16,6 +16,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    env:
+      # O CI não conecta em banco nenhum — não roda migration nem teste de
+      # integração. Mas o `prisma generate` (no postinstall de apps/api) resolve
+      # a config, e o prisma.config.ts exige que DATABASE_URL exista.
+      #
+      # Valor descartável de propósito. Se algum dia o CI precisar de banco de
+      # verdade, use um service container em vez de apontar isto para algo real.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+
     steps:
       - uses: actions/checkout@v4
 
@@ -37,13 +46,20 @@ jobs:
       - name: Formatação
         run: pnpm format:check
 
-      - name: Lint
-        run: pnpm lint
-
-      # Build antes do typecheck de propósito: o packages/shared precisa estar
-      # compilado (dist + .d.ts) para os apps resolverem seus tipos.
+      # Build PRIMEIRO, antes de lint e typecheck.
+      #
+      # Os dois precisam do packages/shared compilado (dist + .d.ts): o
+      # typecheck obviamente, e o lint porque as regras do typescript-eslint
+      # são type-aware. Sem o dist, tudo que vem do @titan/shared resolve como
+      # "error typed value" e o lint acusa no-unsafe-* em código correto.
+      #
+      # Localmente isso passa mesmo na ordem errada, porque o dist já existe de
+      # um build anterior. Só quebra em clone limpo — ou seja, só no CI.
       - name: Build
         run: pnpm build
+
+      - name: Lint
+        run: pnpm lint
 
       - name: Typecheck
         run: pnpm typecheck
