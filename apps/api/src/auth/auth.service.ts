@@ -1,8 +1,9 @@
 import { randomBytes } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import type { User } from '@prisma/client';
-import type { SessionUser } from '@titan/shared';
+import { canAccessInternalArea, type SessionUser } from '@titan/shared';
 import { BlizzardService } from '../blizzard/blizzard.service';
+import { loadGuildConfig, type GuildConfig } from '../config/guild.config';
 import { AuthRepository } from './auth.repository';
 
 /** Duração da sessão. Curta o suficiente para revalidar membership com frequência. */
@@ -11,11 +12,14 @@ const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly guild: GuildConfig;
 
   constructor(
     private readonly blizzard: BlizzardService,
     private readonly repo: AuthRepository,
-  ) {}
+  ) {
+    this.guild = loadGuildConfig();
+  }
 
   /** Token opaco de 256 bits. Não é previsível, então não precisa ser assinado. */
   createOpaqueToken(): string {
@@ -119,13 +123,25 @@ export class AuthService {
     if (sessionId) await this.repo.deleteSession(sessionId);
   }
 
-  /** Projeção do User para o front. Nunca inclui token da Blizzard. */
+  /**
+   * Projeção do User para o front. Nunca inclui token da Blizzard.
+   *
+   * `hasInternalAccess` é resolvido aqui porque o corte de rank é configuração
+   * do servidor e o front não tem acesso a ela. A regra em si mora no shared —
+   * aqui só se aplica o corte a ela.
+   */
   toSessionUser(user: User): SessionUser {
+    const membership = user.membership === 'member' ? ('member' as const) : ('not-member' as const);
+
     return {
       battletag: user.battletag,
-      membership: user.membership === 'member' ? 'member' : 'not-member',
+      membership,
       isOfficer: user.isOfficer,
       guildRank: user.guildRank,
+      hasInternalAccess: canAccessInternalArea(
+        { membership, guildRank: user.guildRank },
+        this.guild.rankAccessMax,
+      ),
       matchedCharacter:
         user.matchedCharacterName && user.matchedCharacterRealm
           ? {

@@ -2,23 +2,37 @@ import { z } from 'zod';
 import { characterRefSchema } from './wow.js';
 
 /**
- * Modelo de acesso.
+ * Modelo de acesso. Ver Regra 4 do CLAUDE.md.
  *
- * DECISÃO (2026-07-30): acesso é **binário** — membro da guilda ou não.
+ * DECISÃO (2026-07-30): acesso à área interna depende do **rank na guilda**,
+ * não só de estar no roster.
  *
- * Não existe hierarquia de permissão por rank do jogo. O roster da guilda tem
- * ranks que misturam alts, raiders e social, e a liderança ainda não decidiu
- * onde termina "oficial". Modelar hierarquia agora significaria escolher errado
- * e depois migrar.
+ * A decisão anterior era acesso binário, com `guildRank` gravado mas nunca
+ * usado. Ela existia porque o roster misturava alts, raiders e social e a
+ * liderança não tinha decidido onde termina "oficial". Os ranks foram
+ * reorganizados, a premissa caiu, e a regra mudou junto.
  *
- * O `guildRank` é **gravado mas não usado** para permissão. Custa nada guardar,
- * e quando a hierarquia existir o histórico já estará aqui — sem migration.
+ * São **três** estados, e o do meio existe para evitar um vexame específico:
+ * um social que está na guilda há dois anos não pode receber a tela de
+ * "candidate-se para entrar na guilda".
+ *
+ * | estado            | área interna | apply |
+ * | ----------------- | ------------ | ----- |
+ * | não-membro        | não          | sim   |
+ * | membro sem acesso | não          | não   |
+ * | membro com acesso | sim          | não   |
  */
 
+/**
+ * Presença no roster — **não** é o mesmo que ter acesso.
+ *
+ * `member` responde "tem personagem na guilda?". Quem responde "entra na área
+ * interna?" é `canAccessInternalArea`, que também olha o rank.
+ */
 export const membershipSchema = z.enum([
-  /** Tem personagem no roster da guilda. Acessa a área interna. */
+  /** Tem pelo menos um personagem no roster da guilda. */
   'member',
-  /** Conta Battle.net válida, mas sem personagem no roster. Só pode dar apply. */
+  /** Conta Battle.net válida, nenhum personagem no roster. Só pode dar apply. */
   'not-member',
 ]);
 export type Membership = z.infer<typeof membershipSchema>;
@@ -40,15 +54,31 @@ export const sessionUserSchema = z.object({
    * pessoa escreveu esperando que só a liderança lesse. Errar o mapeamento de
    * rank para cima vazaria isso para centenas de membros.
    *
-   * Um oficial é sempre membro; a recíproca não vale.
+   * Continua valendo mesmo agora que o rank decide a área interna: são dois
+   * gates independentes. Passar do corte dá a área interna, não a caixa de
+   * entrada do recrutamento.
    */
   isOfficer: z.boolean(),
 
   /**
-   * Rank no roster no momento da verificação. Registro histórico — **não** use
-   * para decidir permissão. Ver a decisão no topo deste arquivo.
+   * Melhor rank entre os personagens da conta que estão no roster.
+   *
+   * **Rank 0 é o mais alto** (guild master) e o número cresce descendo a
+   * hierarquia — confirmado no roster real, onde o rank 0 tem exatamente uma
+   * pessoa. Por isso todo teste de permissão é `rank <= corte`, nunca `>=`.
+   *
+   * Nulo quando a conta não tem personagem no roster.
    */
   guildRank: z.number().int().nonnegative().nullable(),
+
+  /**
+   * Resposta pronta de "esta pessoa entra na área interna?".
+   *
+   * Calculado no servidor porque o corte é configuração de ambiente e o front
+   * não tem acesso a ela. O front lê este booleano; quem tem o corte em mãos
+   * (o Nest) usa `canAccessInternalArea`. Uma regra só, avaliada num lugar só.
+   */
+  hasInternalAccess: z.boolean(),
 
   /** Personagem que casou com o roster, se houver. */
   matchedCharacter: characterRefSchema.nullable(),
@@ -64,14 +94,47 @@ export const sessionUserSchema = z.object({
 });
 export type SessionUser = z.infer<typeof sessionUserSchema>;
 
-/** Acesso à área interna. Deliberadamente trivial — é o ponto da decisão. */
-export function canAccessInternalArea(user: Pick<SessionUser, 'membership'>): boolean {
-  return user.membership === 'member';
+/**
+ * Acesso à área interna: estar no roster **e** estar dentro do corte de rank.
+ *
+ * `rankAccessMax` vem de `GUILD_RANK_ACCESS_MAX`. Nunca escreva o número aqui
+ * nem na regra de negócio: `rank` é a **posição** do rank na lista da guilda,
+ * não uma identidade, e reordenar ranks no jogo muda o significado do número
+ * sem gerar erro nenhum.
+ *
+ * `guildRank` nulo bloqueia mesmo com `membership: 'member'`. É estado
+ * inconsistente (no roster mas sem rank), e diante de dúvida a resposta segura
+ * é negar — liberar por engano expõe dado de presença e loot.
+ */
+export function canAccessInternalArea(
+  user: Pick<SessionUser, 'membership' | 'guildRank'>,
+  rankAccessMax: number,
+): boolean {
+  if (user.membership !== 'member') return false;
+  if (user.guildRank === null) return false;
+  return user.guildRank <= rankAccessMax;
 }
 
-/** Acesso a dado pessoal de candidatos. Nunca inferido de rank. */
+/**
+ * Quem pode se candidatar.
+ *
+ * Só quem **não** está no roster. Membro fora do corte não entra na área
+ * interna, mas também não é convidado a se candidatar para uma guilda em que
+ * já está.
+ */
+export function canApply(user: Pick<SessionUser, 'membership'>): boolean {
+  return user.membership === 'not-member';
+}
+
+/**
+ * Acesso a dado pessoal de candidatos. Nunca inferido de rank.
+ *
+ * Exige acesso à área interna **e** a flag manual. Perder o acesso — por sair
+ * da guilda ou por cair abaixo do corte — derruba o painel junto, mesmo que
+ * ninguém lembre de desligar a flag.
+ */
 export function canReviewApplications(
-  user: Pick<SessionUser, 'membership' | 'isOfficer'>,
+  user: Pick<SessionUser, 'hasInternalAccess' | 'isOfficer'>,
 ): boolean {
-  return user.membership === 'member' && user.isOfficer;
+  return user.hasInternalAccess && user.isOfficer;
 }

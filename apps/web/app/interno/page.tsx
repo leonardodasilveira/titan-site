@@ -9,9 +9,13 @@ export const metadata = { title: 'Área de membros — Titan Inc' };
 /**
  * Área interna.
  *
- * Três estados, não dois. O do meio — logado mas sem personagem no roster — é o
- * mais comum na vida real (candidato que acabou de aplicar, ou pessoa que logou
- * com a conta Battle.net errada) e é o que costuma ser esquecido.
+ * Quatro estados. Os dois do meio são os que costumam ser esquecidos, e eles
+ * pedem textos opostos: quem não está no roster precisa de ajuda para se
+ * candidatar; quem está na guilda mas fora do corte de rank **não** pode ser
+ * convidado a se candidatar para uma guilda em que já está.
+ *
+ * Esta página é UX, não segurança — ver Regra 5. O gate de verdade é o
+ * MemberGuard no Nest.
  */
 export default async function InternoPage() {
   const user = await getSessionUser();
@@ -19,7 +23,41 @@ export default async function InternoPage() {
   // Estado 1: sem sessão.
   if (!user) redirect('/entrar');
 
-  // Estado 2: logado, mas não é da guilda.
+  // Estado 2: é da guilda, mas o rank não alcança a área interna.
+  if (user.membership === 'member' && !user.hasInternalAccess) {
+    return (
+      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-6 px-6 py-16">
+        <div>
+          <p className="text-highlight font-mono text-xs tracking-widest uppercase">
+            Acesso não liberado
+          </p>
+          <h1 className="text-fg mt-3 text-3xl font-semibold tracking-tight">
+            Achamos você no roster, mas a área interna é do time de raid
+          </h1>
+        </div>
+
+        <p className="text-fg-muted">
+          Sua conta (<span className="font-mono">{user.battletag}</span>) está na{' '}
+          <strong>Titan Inc</strong> — você é da guilda. A área interna reúne as ferramentas do time
+          de raid, e o seu rank atual ainda não dá acesso a ela.
+        </p>
+
+        <div className="border-border bg-surface space-y-3 rounded-lg border p-5 text-sm">
+          <p className="text-fg-muted">
+            Se você entrou para o time de raid recentemente, o acesso libera sozinho quando o rank
+            for atualizado no jogo — a verificação roda a cada 6 horas. Se achar que já deveria ter
+            acesso, fale com um oficial.
+          </p>
+        </div>
+
+        <div className="border-border flex flex-wrap items-center gap-4 border-t pt-5">
+          <LogoutButton />
+        </div>
+      </main>
+    );
+  }
+
+  // Estado 3: logado, mas não é da guilda.
   if (user.membership !== 'member') {
     return (
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-6 px-6 py-16">

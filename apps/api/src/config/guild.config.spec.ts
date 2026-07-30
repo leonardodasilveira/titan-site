@@ -12,6 +12,37 @@ describe('loadGuildConfig', () => {
       region: 'us',
       name: 'Titan Inc',
       realm: 'Azralon',
+      rankAccessMax: 4,
+    });
+  });
+
+  describe('GUILD_RANK_ACCESS_MAX', () => {
+    it('lê o corte do ambiente', () => {
+      expect(loadGuildConfig({ ...valid, GUILD_RANK_ACCESS_MAX: '2' }).rankAccessMax).toBe(2);
+    });
+
+    it('cai no default quando não está definida', () => {
+      // Um .env de antes da Regra 4 mudar não pode derrubar a API no boot. E o
+      // default é o corte real da guilda, então errar aqui restringe, não libera.
+      expect(loadGuildConfig(valid).rankAccessMax).toBe(4);
+    });
+
+    it('aceita 0 — só o guild master', () => {
+      // Guarda contra tratar 0 como "não definido": rank 0 é um corte legítimo.
+      expect(loadGuildConfig({ ...valid, GUILD_RANK_ACCESS_MAX: '0' }).rankAccessMax).toBe(0);
+    });
+
+    it('rejeita valor não numérico', () => {
+      // Number('raider') é NaN, e toda comparação com NaN é falsa — a área
+      // interna ficaria inacessível para todo mundo, sem mensagem de erro.
+      expect(() => loadGuildConfig({ ...valid, GUILD_RANK_ACCESS_MAX: 'raider' })).toThrow(
+        /inválido/,
+      );
+    });
+
+    it('rejeita negativo e fracionário', () => {
+      expect(() => loadGuildConfig({ ...valid, GUILD_RANK_ACCESS_MAX: '-1' })).toThrow(/inválido/);
+      expect(() => loadGuildConfig({ ...valid, GUILD_RANK_ACCESS_MAX: '4.5' })).toThrow(/inválido/);
     });
   });
 
