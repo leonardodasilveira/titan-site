@@ -177,11 +177,18 @@ export class MembershipService {
   /**
    * Distribuição de ranks do roster, a cada rodada.
    *
-   * É o **único alarme possível** para reorganização de ranks na guilda: `rank`
-   * é a posição na lista, não uma identidade, e a API da Blizzard não devolve o
-   * nome do rank. Se alguém inserir ou reordenar um rank no jogo, o corte de
-   * acesso passa a significar outra coisa sem gerar erro nenhum — e a única
-   * pista é a contagem mudar de repente. Ver Regra 4 do CLAUDE.md.
+   * É **registro, não alarme**. A contagem por rank oscila toda semana com
+   * entrada e saída de gente, então variação não significa nada e não vale
+   * disparar aviso em cima disso.
+   *
+   * O valor é forense: `rank` é a posição na lista da guilda, não uma
+   * identidade, e a API da Blizzard não devolve o nome do rank. Se um dia
+   * alguém reordenar os ranks no jogo, o corte de acesso passa a significar
+   * outra coisa sem gerar erro nenhum — e este histórico é o que permite achar
+   * em qual rodada a estrutura mudou de formato.
+   *
+   * Quem segura a régua no dia a dia é a definição combinada com a liderança
+   * (rank 4 é Raider), não este log. Ver Regra 4 do CLAUDE.md.
    */
   private logRankDistribution(roster: RosterMember[]): void {
     const porRank = new Map<number, number>();
