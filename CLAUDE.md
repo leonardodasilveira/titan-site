@@ -159,6 +159,8 @@ Antes de abrir PR, rodar localmente o que o CI roda, **nesta ordem**:
 pnpm format:check && pnpm build && pnpm lint && pnpm typecheck && pnpm test
 ```
 
+**Pare o `pnpm dev` antes de rodar `pnpm build`.** Os dois escrevem em `apps/api/dist`: o build limpa o diretório e o watch morre com `Cannot find module dist/main`, que não sugere a causa.
+
 `pnpm build` vem **primeiro** porque lint e typecheck dependem do `packages/shared` compilado. O typecheck por motivo óbvio; o lint porque as regras do `typescript-eslint` são type-aware — sem o `dist`, tudo que vem do `@titan/shared` resolve como tipo de erro e o lint acusa `no-unsafe-*` em código correto.
 
 Localmente a ordem errada passa, porque o `dist` sobrou de um build anterior. Só quebra em clone limpo, ou seja, só no CI.

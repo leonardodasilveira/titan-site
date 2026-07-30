@@ -258,8 +258,17 @@ export class BlizzardService implements OnModuleInit {
     return members;
   }
 
-  /** URL de consent da Blizzard. */
-  buildAuthorizeUrl(state: string, redirectUri: string): string {
+  /**
+   * URL de consent da Blizzard.
+   *
+   * @param forceLogin força a Blizzard a pedir credenciais de novo.
+   *
+   * Sem isso, quem já tem sessão Battle.net no browser é redirecionado de volta
+   * na hora, com a MESMA conta, sem ver nenhuma tela. Ótimo para relogar, ruim
+   * para trocar de conta: nosso logout não encerra a sessão da Blizzard, então
+   * quem tem duas contas fica preso na primeira.
+   */
+  buildAuthorizeUrl(state: string, redirectUri: string, forceLogin = false): string {
     const id = process.env.BLIZZARD_CLIENT_ID;
     if (!id) throw new Error('BLIZZARD_CLIENT_ID ausente');
 
@@ -270,6 +279,7 @@ export class BlizzardService implements OnModuleInit {
     url.searchParams.set('state', state);
     url.searchParams.set('redirect_uri', redirectUri);
     url.searchParams.set('response_type', 'code');
+    if (forceLogin) url.searchParams.set('prompt', 'login');
     return url.toString();
   }
 }

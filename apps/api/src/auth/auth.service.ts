@@ -22,8 +22,8 @@ export class AuthService {
     return randomBytes(32).toString('hex');
   }
 
-  buildAuthorizeUrl(state: string, redirectUri: string): string {
-    return this.blizzard.buildAuthorizeUrl(state, redirectUri);
+  buildAuthorizeUrl(state: string, redirectUri: string, forceLogin = false): string {
+    return this.blizzard.buildAuthorizeUrl(state, redirectUri, forceLogin);
   }
 
   /**

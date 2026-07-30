@@ -27,11 +27,19 @@ export class AuthController {
 
   constructor(private readonly auth: AuthService) {}
 
-  /** Início do login: redireciona para o consent da Blizzard. */
+  /**
+   * Início do login: redireciona para o consent da Blizzard.
+   *
+   * `?trocar=1` força a Blizzard a pedir credenciais de novo. Necessário porque
+   * nosso logout não encerra a sessão da Blizzard — sem isso, quem tem duas
+   * contas Battle.net não consegue trocar: o authorize devolve a mesma conta
+   * na hora, sem mostrar tela nenhuma.
+   */
   @Get('battlenet')
-  start(@Res() res: Response): void {
+  start(@Res() res: Response, @Query('trocar') trocar?: string): void {
     const state = this.auth.createOpaqueToken();
     const redirectUri = requireEnv('BLIZZARD_REDIRECT_URI');
+    const forceLogin = trocar === '1';
 
     // O `state` protege o callback contra CSRF: guardamos em cookie e
     // comparamos no retorno. Sem isso, um terceiro poderia forjar um callback.
@@ -43,7 +51,7 @@ export class AuthController {
       path: '/',
     });
 
-    res.redirect(this.auth.buildAuthorizeUrl(state, redirectUri));
+    res.redirect(this.auth.buildAuthorizeUrl(state, redirectUri, forceLogin));
   }
 
   /** Retorno da Blizzard. */

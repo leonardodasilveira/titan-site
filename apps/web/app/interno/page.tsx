@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getInternalSummary, getSessionUser } from '../../lib/api';
+import { API_URL } from '../../lib/config';
 import { LogoutButton } from './_components/logout-button';
 
 export const metadata = { title: 'Área de membros — Titan Inc' };
@@ -53,9 +54,17 @@ export default async function InternoPage() {
           .
         </p>
 
-        <div className="border-border flex items-center gap-4 border-t pt-5">
+        <div className="border-border flex flex-wrap items-center gap-4 border-t pt-5">
+          {/* trocar=1 força a Blizzard a pedir credenciais. Sem isso, sair daqui
+              e entrar de novo reusa a MESMA conta em silêncio, porque nosso
+              logout não encerra a sessão da Blizzard. */}
+          <a
+            href={`${API_URL}/auth/battlenet?trocar=1`}
+            className="bg-accent hover:bg-accent/90 rounded-md px-4 py-2 text-sm font-medium text-[#0b0d12] transition-colors"
+          >
+            Entrar com outra conta Battle.net
+          </a>
           <LogoutButton />
-          <span className="text-fg-subtle text-sm">para entrar com outra conta</span>
         </div>
       </main>
     );
