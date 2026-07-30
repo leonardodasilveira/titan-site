@@ -1,8 +1,13 @@
 @import 'tailwindcss';
 
 /**
- * Tokens de tema. Nenhuma página deve hardcodar cor — sempre via token,
- * para trocar a identidade visual da guilda em um lugar só (TIT-10).
+ * Tokens de tema, derivados da logo da guilda (public/titan-inc-logo.png).
+ *
+ * A logo é uma âncora em aquarela com o wordmark em gradiente azul → roxo →
+ * rosa, e turquesa no topo da âncora. As cores abaixo foram extraídas dos
+ * pixels da própria logo, não escolhidas a olho.
+ *
+ * Nenhuma página deve hardcodar cor — sempre via token.
  */
 @theme {
   --color-bg: #0b0d12;
@@ -13,9 +18,17 @@
   --color-fg-muted: #9aa1b1;
   --color-fg-subtle: #6b7280;
 
-  /* Cor da guilda — provisória, trocar quando houver identidade definida. */
-  --color-accent: #c8a250;
-  --color-accent-soft: #3a2f16;
+  /* Turquesa da âncora. É a cor da logo com melhor legibilidade sobre o
+     fundo escuro, então virou o destaque principal. */
+  --color-accent: #78d8c0;
+  --color-accent-soft: #14332c;
+
+  /* Rosa do "INC" no wordmark. Destaque secundário. */
+  --color-highlight: #d86078;
+  --color-highlight-soft: #331a20;
+
+  /* Azul do "TITAN" no wordmark. */
+  --color-brand-blue: #4878c0;
 
   --color-ok: #4ade80;
   --color-danger: #f87171;
