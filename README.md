@@ -55,3 +55,17 @@ Scaffold pronto e verificado: os três workspaces buildam, `pnpm typecheck` pass
 | `pnpm lint`      | ESLint                                 |
 | `pnpm test`      | testes                                 |
 | `pnpm format`    | Prettier                               |
+
+### Sonda de roster
+
+Testa a lógica de membership **sem credencial da Blizzard e sem o login implementado**:
+
+```bash
+pnpm --filter api probe:roster "<Nome da Guilda>" <realm> [personagem...]
+```
+
+Mostra o roster, a distribuição de rank (que vira role no site) e se a interseção por
+slug encontra os personagens informados. Usa Raider.IO, que é público.
+
+O Raider.IO é crawleado, então pode estar atrasado em relação ao jogo — a fonte da
+verdade em produção é a Game Data API da Blizzard (TIT-19). Isto é ferramenta de dev.
