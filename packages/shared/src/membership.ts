@@ -80,8 +80,16 @@ export const sessionUserSchema = z.object({
    */
   hasInternalAccess: z.boolean(),
 
-  /** Personagem que casou com o roster, se houver. */
+  /** Personagem de rank mais alto, para representar a conta na tela. */
   matchedCharacter: characterRefSchema.nullable(),
+
+  /**
+   * Quantos personagens da conta estão no roster.
+   *
+   * Só a contagem: a lista inteira não é necessária para nada que o front faz
+   * hoje, e mandar menos dado pessoal por padrão é a escolha certa.
+   */
+  characterCount: z.number().int().nonnegative(),
 
   /**
    * Quando a membership foi confirmada contra o roster pela última vez.

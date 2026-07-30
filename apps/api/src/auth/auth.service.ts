@@ -172,6 +172,7 @@ export class AuthService {
       // O personagem de rank mais alto representa a pessoa na UI. Empate cai
       // no primeiro, e tanto faz: são o mesmo rank.
       matchedCharacter: pickRepresentative(user.characters),
+      characterCount: user.characters.length,
       verifiedAt: user.verifiedAt?.toISOString() ?? null,
     };
   }
