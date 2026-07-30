@@ -100,7 +100,9 @@ model GuildCharacter {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  /// Um personagem aparece uma vez por conta.
+  /// A identidade de um personagem é o par nome + realm, nunca o nome sozinho:
+  /// WoW garante nome único por realm, e é justamente por isso que quem acha o
+  /// nome ocupado registra uma variação acentuada dele.
   @@unique([userId, realmSlug, nameKey])
   @@index([userId])
   @@index([realmSlug, nameKey])

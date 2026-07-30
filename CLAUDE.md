@@ -166,7 +166,9 @@ Nunca compare string crua. Mas **realm e personagem usam funções diferentes**,
 
 **Realm** precisa de `toSlug()` porque a Blizzard devolve `area-52` em alguns endpoints e `Area 52` em outros.
 
-**Personagem vindo da API precisa manter o acento**, porque em WoW é comum nomear alts com variações acentuadas do mesmo nome — e são personagens diferentes, com ranks diferentes. Não é caso raro: no roster da Titan Inc existem 7 grupos assim.
+**Personagem vindo da API precisa manter o acento.** WoW não permite dois personagens com o mesmo nome no mesmo realm, então quem chega e encontra o nome ocupado registra uma variação acentuada dele. O acento não é enfeite — é como a pessoa conseguiu o nome que queria. São personagens diferentes, com ranks diferentes, e não é caso raro: no roster da Titan Inc existem 7 grupos assim.
+
+Daí a regra que vale para qualquer identificação de personagem no sistema: **sempre o par nome + realm**, nunca o nome sozinho — em chave de banco, em lookup e na tela.
 
 ```
 azralon/Shrëwd (rank 5) · Shrêwd (rank 5) · Shrèwd (rank 7)

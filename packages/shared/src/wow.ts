@@ -95,9 +95,15 @@ export function toSlug(value: string): string {
 /**
  * Identidade de um personagem vindo da API da Blizzard.
  *
- * **Preserva acento de propósito.** Em WoW é comum a mesma pessoa nomear alts
- * com variações acentuadas do mesmo nome, e são personagens diferentes, com
- * ranks diferentes. No roster da Titan Inc isso aparece em 7 grupos, entre eles:
+ * **Preserva acento de propósito.** WoW não permite dois personagens com o mesmo
+ * nome no mesmo realm, então quem chega e encontra o nome ocupado registra uma
+ * variação acentuada dele. Não é enfeite: é a forma de conseguir o nome que a
+ * pessoa queria. Por isso variação acentuada é comum, e por isso ela distingue
+ * personagens diferentes, com ranks diferentes.
+ *
+ * A consequência prática: a identidade de um personagem é sempre o par
+ * **nome + realm**, nunca o nome sozinho. No roster da Titan Inc as colisões
+ * aparecem em 7 grupos, entre eles:
  *
  * ```
  * azralon/Shrëwd (rank 5) · Shrêwd (rank 5) · Shrèwd (rank 7)
