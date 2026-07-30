@@ -12,7 +12,10 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Estado de membership na guilda. Acesso é binário — ver Regra 4 do CLAUDE.md.
+/// Presença no roster da guilda.
+///
+/// NÃO é o mesmo que ter acesso: quem responde isso é o rank, contra o corte
+/// de `GUILD_RANK_ACCESS_MAX`. Ver Regra 4 do CLAUDE.md.
 enum Membership {
   member
   not_member
@@ -37,19 +40,15 @@ model User {
   /// derivado do rank do jogo — ver Regra 4 do CLAUDE.md.
   isOfficer Boolean @default(false)
 
-  /// Rank no roster na última verificação. Registro histórico: NÃO usar para
-  /// decidir permissão.
+  /// MELHOR rank entre os personagens da conta no roster — menor número é mais
+  /// alto, e rank 0 é o guild master. Derivado de `characters`, desnormalizado
+  /// aqui porque o guard consulta isso a cada request.
+  ///
+  /// Nulo quando a conta não tem nenhum personagem no roster.
   guildRank Int?
 
-  /// Personagem que casou com o roster, normalizado via toSlug().
-  ///
-  /// Guardar isto é o que permite revalidar membership periodicamente usando
-  /// só a credencial da aplicação (client credentials): basta checar se este
-  /// personagem continua no roster. Sem isso, revalidar exigiria guardar o
-  /// refresh token do usuário — mais um segredo para proteger, sem ganho.
-  matchedCharacterSlug  String?
-  matchedCharacterName  String?
-  matchedCharacterRealm String?
+  /// Todos os personagens da conta que estão no roster.
+  characters GuildCharacter[]
 
   /// Última confirmação contra o roster. Nulo = nunca verificado.
   verifiedAt DateTime?
@@ -58,8 +57,50 @@ model User {
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+}
 
-  @@index([matchedCharacterSlug])
+/// Personagem da conta que está no roster da guilda.
+///
+/// É tabela, e não colunas no User, porque uma conta tem N personagens na
+/// guilda e o rank da pessoa é o MELHOR entre eles. Guardar um personagem só
+/// fazia o job de revalidação revogar acesso de membro legítimo quando um alt
+/// saía da guilda — silenciosamente, e a pessoa só descobria ao tentar entrar.
+///
+/// Guardar isto é o que permite revalidar usando só a credencial da aplicação
+/// (client credentials): basta conferir se estes personagens continuam no
+/// roster. Sem isso, revalidar exigiria guardar o refresh token de cada
+/// usuário — mais um segredo para proteger, sem ganho.
+///
+/// LIMITE CONHECIDO, não é bug: a lista só ganha personagens NOVOS no login.
+/// O roster da Blizzard não diz de qual conta Battle.net cada personagem é,
+/// então descobrir um alt novo exige o token do usuário. Remoção da guilda e
+/// mudança de rank continuam sendo detectadas a cada 6h para sempre, mesmo que
+/// a pessoa nunca mais logue — nada fica desatualizado por anos.
+model GuildCharacter {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Normalizados via toSlug() — comparar string crua faz a verificação falhar
+  /// em silêncio com nome acentuado. Ver Regra 6 do CLAUDE.md.
+  slug      String
+  realmSlug String
+
+  /// Nome como a Blizzard exibe, com acento e capitalização. Só para mostrar.
+  name String
+
+  /// Rank deste personagem no roster. O rank da PESSOA é o menor entre os dela.
+  rank Int
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Um personagem aparece uma vez por conta. Slug+realm é a identidade real —
+  /// o nome exibido muda de capitalização entre endpoints da Blizzard.
+  @@unique([userId, realmSlug, slug])
+  @@index([userId])
+  @@index([realmSlug, slug])
 }
 
 /// Sessão com estado no banco, não JWT.
