@@ -1,3 +1,7 @@
+// PRIMEIRO import, de propósito: carrega o .env antes de qualquer módulo que
+// leia variáveis de ambiente (o PrismaClient lê DATABASE_URL na construção).
+import './load-env';
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 

@@ -1,4 +1,7 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  // Atenção: `exclude` SOBRESCREVE o do tsconfig.json em vez de somar. Por
+  // isso prisma.config.ts precisa ser repetido aqui — sem ele, o build falha
+  // com TS1470 (import.meta em saída CommonJS).
+  "exclude": ["node_modules", "test", "dist", "prisma.config.ts", "**/*spec.ts"]
 }

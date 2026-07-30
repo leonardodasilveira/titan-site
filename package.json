@@ -14,6 +14,13 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
+    "db:up": "pwsh -NoProfile -File scripts/db.ps1 up",
+    "db:down": "pwsh -NoProfile -File scripts/db.ps1 down",
+    "db:reset": "pwsh -NoProfile -File scripts/db.ps1 reset",
+    "db:status": "pwsh -NoProfile -File scripts/db.ps1 status",
+    "db:logs": "pwsh -NoProfile -File scripts/db.ps1 logs",
+    "db:psql": "pwsh -NoProfile -File scripts/db.ps1 psql",
+    "migrate": "pnpm --filter api exec prisma migrate dev",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\""
   },

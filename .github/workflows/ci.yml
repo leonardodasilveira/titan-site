@@ -16,6 +16,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    env:
+      # O CI não conecta em banco nenhum — não roda migration nem teste de
+      # integração. Mas o `prisma generate` (no postinstall de apps/api) resolve
+      # a config, e o prisma.config.ts exige que DATABASE_URL exista.
+      #
+      # Valor descartável de propósito. Se algum dia o CI precisar de banco de
+      # verdade, use um service container em vez de apontar isto para algo real.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+
     steps:
       - uses: actions/checkout@v4
 

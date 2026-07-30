@@ -1,0 +1,42 @@
+# Infraestrutura de desenvolvimento local.
+#
+# Só o banco. Os apps rodam nativos via `pnpm dev` — em dev, hot reload
+# nativo é mais rápido e mais simples de debugar que dentro de container.
+# Os Dockerfiles dos apps entram quando houver deploy.
+#
+# Nesta máquina o Docker vive no Ubuntu (WSL2) e o app roda no Windows. Isso
+# funciona porque o WSL2 encaminha localhost: a porta publicada abaixo fica
+# acessível em localhost:5432 do lado Windows, sem configuração extra.
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: titan-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: titan
+      POSTGRES_PASSWORD: titan
+      POSTGRES_DB: titan
+    ports:
+      - '5432:5432'
+    volumes:
+      # Volume nomeado, não bind mount: bind mount de /mnt/c no WSL2 é lento
+      # e dá problema de permissão com o Postgres.
+      #
+      # Monta em /var/lib/postgresql, NÃO em /var/lib/postgresql/data. A imagem
+      # do Postgres 18 mudou isso: os dados agora vão para um subdiretório por
+      # versão maior, para permitir `pg_upgrade --link` sem cruzar mount point.
+      # Montar no caminho antigo faz o container entrar em loop de restart.
+      - titan-pgdata:/var/lib/postgresql
+    healthcheck:
+      # Sem isso, `docker compose up -d` retorna antes do banco aceitar
+      # conexão, e a primeira migration falha por corrida.
+      test: ['CMD-SHELL', 'pg_isready -U titan -d titan']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  titan-pgdata:
+    name: titan-pgdata
