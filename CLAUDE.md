@@ -71,7 +71,23 @@ src/applications/
 - Regra de negócio no **service**, nunca no controller.
 - `PrismaClient` só no **repository**. Nenhum service importa Prisma direto.
 
-## Regra 4 — Autorização é no Nest, sempre
+## Regra 4 — Acesso é binário (por enquanto)
+
+**Membro da guilda vê a área interna. Não-membro só pode dar apply.** É isso.
+
+Não existe hierarquia de permissão por rank do jogo. O roster mistura alts, raiders e social, e a liderança ainda não decidiu onde termina "oficial" — modelar hierarquia agora seria escolher errado e migrar depois.
+
+O `guildRank` é **gravado mas nunca usado** para decidir permissão. Registro histórico, para quando a hierarquia existir de verdade. Use `canAccessInternalArea()` do shared, nunca compare rank.
+
+### A exceção: painel de candidaturas
+
+Candidatura contém Discord tag, Battle.tag e texto que a pessoa escreveu esperando que só a liderança lesse. Se qualquer um dos ~374 membros do roster puder abrir isso, é vazamento.
+
+Então o painel é gated por `isOfficer`, uma flag **manual**, atribuída à mão a poucas pessoas. Deliberadamente **não** derivada do rank: errar o mapeamento para cima expõe dado pessoal de centenas de candidatos.
+
+Use `canReviewApplications()`. Ela exige membership **e** a flag — sair da guilda derruba o acesso mesmo que ninguém lembre de desligar a flag.
+
+## Regra 5 — Autorização é no Nest, sempre
 
 O middleware do Next que protege `/interno/*` é **UX, não segurança**. Ele evita tela quebrada.
 
@@ -79,7 +95,7 @@ Todo endpoint interno precisa do seu próprio guard no Nest. Um endpoint que dep
 
 Ao criar endpoint interno, o teste não é "a UI esconde?" — é "chamado sem cookie devolve 401?".
 
-## Regra 5 — Chamadas a APIs externas
+## Regra 6 — Chamadas a APIs externas
 
 Blizzard, Raider.IO e WarcraftLogs são chamadas **só pelo Nest**, nunca pelo browser.
 
