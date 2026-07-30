@@ -49,12 +49,38 @@ const COMBINING_MARKS = /[̀-ͯ]/g;
 const APOSTROPHES = /['’]/g;
 
 /**
+ * Letras latinas que o NFD **não** decompõe, porque não são letra base +
+ * acento — são caracteres próprios.
+ *
+ * Encontrado em dado real: o roster tinha "Håøkåh". O `å` foi normalizado
+ * (é a + anel combinante), mas o `ø` sobreviveu, gerando "haøkah". Quem
+ * digitasse "Haokah" no formulário de apply não casaria com o roster.
+ */
+const LATIN_SPECIALS: Record<string, string> = {
+  ø: 'o',
+  æ: 'ae',
+  œ: 'oe',
+  ß: 'ss',
+  ð: 'd',
+  þ: 'th',
+  đ: 'd',
+  ł: 'l',
+  ħ: 'h',
+  ŋ: 'n',
+  ı: 'i',
+};
+const LATIN_SPECIALS_RE = new RegExp(`[${Object.keys(LATIN_SPECIALS).join('')}]`, 'g');
+
+/**
  * Normaliza nome de personagem ou realm para comparação.
  *
  * Necessário porque a Blizzard devolve realm como slug (`area-52`) em alguns
  * endpoints e como nome exibido (`Area 52`) em outros, e nomes de personagem
  * vêm com acentos e capitalização variável. Comparar string crua faz a
  * verificação de membership falhar silenciosamente — ver TIT-19.
+ *
+ * A meta é ser tolerante com quem **digita** o nome: "Zecolmeia" tem que casar
+ * com "Zécolmeia" do roster.
  */
 export function toSlug(value: string): string {
   return value
@@ -62,6 +88,7 @@ export function toSlug(value: string): string {
     .replace(COMBINING_MARKS, '')
     .toLowerCase()
     .trim()
+    .replace(LATIN_SPECIALS_RE, (c) => LATIN_SPECIALS[c] ?? c)
     .replace(APOSTROPHES, '')
     .replace(/[\s_]+/g, '-');
 }
