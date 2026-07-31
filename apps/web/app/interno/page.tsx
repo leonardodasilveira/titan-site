@@ -26,7 +26,7 @@ export default async function InternoPage() {
   // Estado 2: é da guilda, mas o rank não alcança a área interna.
   if (user.membership === 'member' && !user.hasInternalAccess) {
     return (
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-6 px-6 py-16">
+      <main className="flex w-full max-w-xl flex-1 flex-col justify-center gap-6 py-8">
         <div>
           <p className="text-highlight font-mono text-xs tracking-widest uppercase">
             Acesso não liberado
@@ -60,7 +60,7 @@ export default async function InternoPage() {
   // Estado 3: logado, mas não é da guilda.
   if (user.membership !== 'member') {
     return (
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-6 px-6 py-16">
+      <main className="flex w-full max-w-xl flex-1 flex-col justify-center gap-6 py-8">
         <div>
           <p className="text-highlight font-mono text-xs tracking-widest uppercase">
             Acesso não liberado
@@ -112,7 +112,7 @@ export default async function InternoPage() {
   const summary = await getInternalSummary();
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-6 py-14">
+    <main className="flex w-full max-w-2xl flex-1 flex-col gap-10">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-accent font-mono text-xs tracking-widest uppercase">Área de membros</p>

@@ -8,6 +8,7 @@ import { HealthModule } from './health/health.module';
 import { InternalModule } from './internal/internal.module';
 import { MembershipModule } from './membership/membership.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RosterModule } from './roster/roster.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
     BlizzardModule,
     AuthModule,
     InternalModule,
+    RosterModule,
     MembershipModule,
     HealthModule,
   ],
