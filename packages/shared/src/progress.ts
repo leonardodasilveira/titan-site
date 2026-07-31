@@ -30,8 +30,17 @@ export const progressRowSchema = z.object({
   /** Distância para a média de chaves do time. */
   keysVsAverage: z.number().nullable(),
 
-  /** Total acumulado na season. */
+  /** Total acumulado nas semanas em que existe registro. */
   keysInSeason: z.number(),
+
+  /**
+   * Em quantas semanas da season existe registro de chaves deste personagem.
+   *
+   * Sem isso, `keysInSeason` engana: o WoWAudit só tem histórico a partir de
+   * quando passou a acompanhar o time, então um total baixo pode ser "fez
+   * pouco" ou "a gente não estava olhando". A tela mostra os dois números.
+   */
+  keysWeeksKnown: z.number(),
 
   /** Maior nível de chave na semana. Separa 3 chaves +10 de 3 chaves +2. */
   highestKey: z.number().nullable(),

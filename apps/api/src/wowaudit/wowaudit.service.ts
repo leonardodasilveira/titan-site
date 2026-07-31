@@ -14,8 +14,17 @@ export interface WeeklyKeys {
   nameKey: string;
   realmSlug: string;
   name: string;
-  /** Quantas keys fechou. */
-  count: number;
+  /**
+   * Quantas keys fechou, ou **null quando o WoWAudit não tem registro** da
+   * semana para esse personagem.
+   *
+   * A distinção é essencial: null e 0 são coisas diferentes. O histórico só
+   * existe a partir de quando o time passou a ser acompanhado — na season 17,
+   * 86 de 440 pares personagem×semana não têm registro. Tratar isso como zero
+   * afunda a média do time e inventa "não fez nada" para quem a ferramenta
+   * simplesmente não observava.
+   */
+  count: number | null;
   /** Maior nível. Distingue 3 keys +10 de 3 keys +2. */
   highest: number | null;
 }
@@ -118,12 +127,25 @@ export class WowAuditService {
       characters: Array<{
         name: string;
         realm: string;
-        data?: { dungeons_done?: Array<{ level: number }> };
+        /** Ausente quando o WoWAudit não tem registro daquela semana. */
+        data?: { dungeons_done?: Array<{ level: number }> } | null;
       }>;
     };
 
     return body.characters.map((c) => {
-      const feitas = c.data?.dungeons_done ?? [];
+      // `data` ausente = o WoWAudit não acompanhava o personagem naquela
+      // semana. `dungeons_done: []` com `data` presente = fez zero de verdade.
+      if (!c.data) {
+        return {
+          nameKey: toCharacterKey(c.name),
+          realmSlug: toSlug(c.realm),
+          name: c.name,
+          count: null,
+          highest: null,
+        };
+      }
+
+      const feitas = c.data.dungeons_done ?? [];
       const niveis = feitas.map((d) => d.level);
 
       return {

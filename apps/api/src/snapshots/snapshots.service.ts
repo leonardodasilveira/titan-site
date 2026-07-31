@@ -89,7 +89,9 @@ export class SnapshotsService {
     });
 
     // Keys da semana, por personagem. Uma chamada só para o time inteiro.
-    const keysPorPersonagem = new Map<string, { count: number; highest: number | null }>();
+    // `count` nulo = o WoWAudit não tem registro daquela semana. Propagar o
+    // nulo até o banco é o ponto: zero seria "não fez nada", que é outra coisa.
+    const keysPorPersonagem = new Map<string, { count: number | null; highest: number | null }>();
     try {
       for (const k of await this.wowaudit.getWeeklyKeys(season.currentPeriod)) {
         keysPorPersonagem.set(`${k.realmSlug}/${k.nameKey}`, {
@@ -166,13 +168,19 @@ export class SnapshotsService {
     for (let period = season.firstPeriod; period <= season.currentPeriod; period++) {
       try {
         const keys = await this.wowaudit.getWeeklyKeys(period);
-        const comDados = keys.map((k) => ({
-          nameKey: k.nameKey,
-          realmSlug: k.realmSlug,
-          name: k.name,
-          keysDone: k.count,
-          highestKey: k.highest,
-        }));
+
+        // Semana sem registro não vira linha. Gravar zero ali inventaria "não
+        // fez nada" para quem a ferramenta nem observava — e afundaria a média
+        // do time no relatório.
+        const comDados = keys
+          .filter((k): k is typeof k & { count: number } => k.count !== null)
+          .map((k) => ({
+            nameKey: k.nameKey,
+            realmSlug: k.realmSlug,
+            name: k.name,
+            keysDone: k.count,
+            highestKey: k.highest,
+          }));
 
         entries += await this.repo.saveWeeklyKeys(period, season.id, comDados);
         periods++;

@@ -169,8 +169,14 @@ export function ProgressTable({ report }: { report: ProgressReport }) {
                   </span>
                 </td>
 
-                <td className="text-fg-muted px-4 py-2.5 text-right font-mono tabular-nums">
-                  {r.keysInSeason}
+                <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+                  <span className="text-fg-muted">{r.keysInSeason}</span>
+                  {/* Em quantas semanas existe registro. Sem isso o total
+                      engana: baixo pode ser "fez pouco" ou "não tínhamos o
+                      dado" — e o WoWAudit só guarda a partir do tracking. */}
+                  <span className="text-fg-subtle ml-2 text-xs">
+                    em {r.keysWeeksKnown}/{report.periodCount}
+                  </span>
                 </td>
               </tr>
             ))}

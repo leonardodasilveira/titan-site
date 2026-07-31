@@ -145,6 +145,19 @@ describe('SnapshotsService', () => {
     expect(result).toMatchObject({ status: 'ok' });
   });
 
+  it('semana sem registro no WoWAudit não vira zero', async () => {
+    // 86 de 440 pares personagem×semana da season 17 não têm registro. Gravar
+    // zero ali inventaria "não fez nada" para quem a ferramenta nem observava,
+    // e afundaria a média do time no relatório.
+    wowaudit.getWeeklyKeys.mockResolvedValue([
+      { nameKey: 'fulano', realmSlug: 'azralon', name: 'Fulano', count: null, highest: null },
+    ]);
+
+    await service.takeSnapshot();
+
+    expect(gravados()[0]?.keysDone).toBeNull();
+  });
+
   it('a rodada agendada não deixa exceção escapar', async () => {
     blizzard.getCurrentSeason.mockRejectedValue(new Error('Blizzard fora do ar'));
 
