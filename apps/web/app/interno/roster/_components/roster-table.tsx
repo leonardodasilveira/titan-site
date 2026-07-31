@@ -32,8 +32,20 @@ function formatarScore(valor: number | null): string {
   return valor.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
+/**
+ * Item level sempre com **duas casas decimais**, que é como a guilda lê.
+ *
+ * O Raider.IO devolve fracionário (293.062, 292.438) e às vezes redondo. Duas
+ * armadilhas aqui, as duas já cometidas:
+ *
+ * - `String(valor)` não localiza: num site em pt-BR, "293.062" se lê como 293
+ *   mil, porque ponto é separador de milhar aqui;
+ * - sem `minimumFractionDigits`, quem tem ilvl redondo perde as casas e a
+ *   coluna fica torta.
+ */
 function formatarIlvl(valor: number | null): string {
-  return valor === null ? '—' : String(valor);
+  if (valor === null) return '—';
+  return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /** Texto de ordenação de uma linha, por coluna. */
