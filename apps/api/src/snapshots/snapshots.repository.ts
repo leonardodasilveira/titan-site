@@ -60,4 +60,70 @@ export class SnapshotsRepository {
 
     return entradas.length;
   }
+
+  /**
+   * Grava SÓ as chaves de uma semana.
+   *
+   * Existe separado do snapshot completo por causa do backfill: semanas
+   * passadas têm chaves (o WoWAudit guarda) mas não têm item level (o
+   * Raider.IO só dá o agora). Usar o upsert completo aqui apagaria o item
+   * level já medido da semana corrente, trocando dado real por nulo.
+   */
+  async saveWeeklyKeys(
+    period: number,
+    seasonId: number,
+    entradas: Array<{
+      nameKey: string;
+      realmSlug: string;
+      name: string;
+      keysDone: number;
+      highestKey: number | null;
+    }>,
+  ): Promise<number> {
+    for (const e of entradas) {
+      const { nameKey, realmSlug, name, keysDone, highestKey } = e;
+      await this.prisma.characterSnapshot.upsert({
+        where: { period_realmSlug_nameKey: { period, realmSlug, nameKey } },
+        create: { period, seasonId, nameKey, realmSlug, name, keysDone, highestKey },
+        // Só as chaves. itemLevel e score ficam como estão.
+        update: { keysDone, highestKey },
+      });
+    }
+
+    return entradas.length;
+  }
+
+  /** Seasons gravadas, mais recentes primeiro. */
+  listSeasons(limite: number) {
+    return this.prisma.gameSeason.findMany({
+      orderBy: { startedAt: 'desc' },
+      take: limite,
+      select: { id: true, patch: true, name: true, firstPeriod: true, periodCount: true },
+    });
+  }
+
+  /** Uma season específica, ou null. */
+  findSeason(id: number) {
+    return this.prisma.gameSeason.findUnique({
+      where: { id },
+      select: { id: true, patch: true, name: true, firstPeriod: true, periodCount: true },
+    });
+  }
+
+  /** Todas as fotos de uma season, para montar o relatório de uma vez só. */
+  findSeasonSnapshots(seasonId: number) {
+    return this.prisma.characterSnapshot.findMany({
+      where: { seasonId },
+      orderBy: { period: 'asc' },
+      select: {
+        period: true,
+        nameKey: true,
+        realmSlug: true,
+        name: true,
+        itemLevel: true,
+        keysDone: true,
+        highestKey: true,
+      },
+    });
+  }
 }

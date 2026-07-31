@@ -1,6 +1,13 @@
 import 'server-only';
 
-import { rosterSchema, sessionUserSchema, type Roster, type SessionUser } from '@titan/shared';
+import {
+  progressReportSchema,
+  rosterSchema,
+  sessionUserSchema,
+  type ProgressReport,
+  type Roster,
+  type SessionUser,
+} from '@titan/shared';
 import { cookies } from 'next/headers';
 import { API_URL, SESSION_COOKIE } from './config';
 
@@ -89,6 +96,35 @@ export async function getRoster(): Promise<Roster | null> {
     if (!res.ok) return null;
 
     const parsed = rosterSchema.safeParse(await res.json());
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Relatório de progressão da season.
+ *
+ * Null tanto para "API recusou" quanto para "ainda não há semana gravada" — a
+ * página trata os dois como "sem dado ainda", que é o estado esperado no
+ * começo e não merece tela de erro.
+ */
+export async function getProgress(season?: string): Promise<ProgressReport | null> {
+  const query = season ? `?season=${encodeURIComponent(season)}` : '';
+
+  try {
+    const res = await fetch(`${API_URL}/internal/progress${query}`, {
+      headers: await sessionHeader(),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!res.ok) return null;
+
+    const body: unknown = await res.json();
+    if (body === null) return null;
+
+    const parsed = progressReportSchema.safeParse(body);
     return parsed.success ? parsed.data : null;
   } catch {
     return null;

@@ -1,18 +1,22 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { BlizzardModule } from '../blizzard/blizzard.module';
 import { GameVersionModule } from '../gameversion/gameversion.module';
 import { RaiderIoModule } from '../raiderio/raiderio.module';
 import { WowAuditModule } from '../wowaudit/wowaudit.module';
+import { ProgressController } from './progress.controller';
+import { ProgressService } from './progress.service';
 import { SnapshotsRepository } from './snapshots.repository';
 import { SnapshotsService } from './snapshots.service';
 
 /**
- * Sem controller: o gatilho é o cron, não HTTP. Esta issue é só gravação — a
- * leitura vem depois, quando houver semanas para comparar.
+ * Gravação (cron) e leitura (relatório) do mesmo domínio, no mesmo módulo —
+ * assim o Prisma continua confinado a um repository só, como manda a Regra 3.
  */
 @Module({
-  imports: [BlizzardModule, WowAuditModule, RaiderIoModule, GameVersionModule],
-  providers: [SnapshotsService, SnapshotsRepository],
+  imports: [AuthModule, BlizzardModule, WowAuditModule, RaiderIoModule, GameVersionModule],
+  controllers: [ProgressController],
+  providers: [SnapshotsService, SnapshotsRepository, ProgressService],
   exports: [SnapshotsService],
 })
 export class SnapshotsModule {}
