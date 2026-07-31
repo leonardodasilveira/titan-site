@@ -50,7 +50,12 @@ describe('SnapshotsService', () => {
     blizzard.getCurrentSeason.mockResolvedValue(season());
     wowaudit.getTeamCharacters.mockResolvedValue([char('Fulano')]);
     wowaudit.getWeeklyKeys.mockResolvedValue([]);
-    raiderio.getProgress.mockResolvedValue({ itemLevel: 293.06, mythicPlusScore: 3412.1 });
+    raiderio.getProgress.mockResolvedValue({
+      itemLevel: 293.06,
+      mythicPlusScore: 3412.1,
+      seasonRuns: 182,
+      seasonRunsTimed: 165,
+    });
     gameVersion.getPatchLabel.mockResolvedValue('12.0');
     repo.upsertSeason.mockResolvedValue(undefined);
     repo.saveSnapshots.mockImplementation((e: unknown[]) => Promise.resolve(e.length));
@@ -83,6 +88,9 @@ describe('SnapshotsService', () => {
         itemLevel: 293.06,
         keysDone: 3,
         highestKey: 10,
+        // Acumulado da season vem do Raider.IO, completo — a soma das nossas
+        // semanas subestimaria quem já jogava antes do tracking do WoWAudit.
+        seasonRuns: 182,
       }),
     ]);
     expect(result).toMatchObject({ status: 'ok', recorded: 1, weekInSeason: 20 });
@@ -105,7 +113,12 @@ describe('SnapshotsService', () => {
   it('item level ausente vira null, NUNCA zero', async () => {
     // Zero seria lido como "a pessoa está sem gear". O gráfico precisa de
     // lacuna, não de um ponto falso no eixo.
-    raiderio.getProgress.mockResolvedValue({ itemLevel: null, mythicPlusScore: null });
+    raiderio.getProgress.mockResolvedValue({
+      itemLevel: null,
+      mythicPlusScore: null,
+      seasonRuns: null,
+      seasonRunsTimed: null,
+    });
 
     const result = await service.takeSnapshot();
 
