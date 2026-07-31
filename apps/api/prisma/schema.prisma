@@ -199,6 +199,19 @@ model CharacterSnapshot {
   /// Maior nível de key na semana. Distingue 3 keys +10 de 3 keys +2.
   highestKey Int?
 
+  /// Total ACUMULADO de M+ na season, do Raider.IO.
+  ///
+  /// Diferente de `keysDone`, que é a semana. Este número é completo — o
+  /// Raider.IO acumula desde o início da season — enquanto a soma semanal do
+  /// WoWAudit só cobre o período em que ele acompanhava o time.
+  ///
+  /// Guardado toda semana de propósito: a diferença entre duas semanas dá a
+  /// atividade real do intervalo, sem depender do WoWAudit.
+  seasonRuns Int?
+
+  /// Quantas do acumulado foram no tempo.
+  seasonRunsTimed Int?
+
   recordedAt DateTime @default(now())
 
   /// Uma foto por personagem por semana. Rodar o job duas vezes atualiza a

@@ -20,6 +20,8 @@ export interface SnapshotInput {
   mythicPlusScore: number | null;
   keysDone: number | null;
   highestKey: number | null;
+  seasonRuns: number | null;
+  seasonRunsTimed: number | null;
 }
 
 /**
@@ -123,6 +125,8 @@ export class SnapshotsRepository {
         itemLevel: true,
         keysDone: true,
         highestKey: true,
+        seasonRuns: true,
+        seasonRunsTimed: true,
       },
     });
   }

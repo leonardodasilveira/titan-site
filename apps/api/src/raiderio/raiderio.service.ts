@@ -4,9 +4,30 @@ import { Injectable, Logger } from '@nestjs/common';
 export interface CharacterProgress {
   itemLevel: number | null;
   mythicPlusScore: number | null;
+
+  /**
+   * Total de M+ concluídas na season, somando todas as dungeons.
+   *
+   * Vem de `mythic_plus_dungeon_run_counts`, que é **acumulado da season** e
+   * não tem teto — diferente de `recent_runs` (10) e `best_runs` (8), que são
+   * listas truncadas e não servem para contar.
+   *
+   * É a fonte certa para "quantas chaves na season": o WoWAudit só tem
+   * histórico a partir de quando passou a acompanhar o time, então somar as
+   * semanas dele subestima quem já jogava antes.
+   */
+  seasonRuns: number | null;
+
+  /** Quantas dessas foram no tempo. Esforço e resultado não são a mesma coisa. */
+  seasonRunsTimed: number | null;
 }
 
-const VAZIO: CharacterProgress = { itemLevel: null, mythicPlusScore: null };
+const VAZIO: CharacterProgress = {
+  itemLevel: null,
+  mythicPlusScore: null,
+  seasonRuns: null,
+  seasonRunsTimed: null,
+};
 
 /** TTL do cache. Gear e score não mudam de minuto em minuto. */
 const PROFILE_TTL_MS = 60 * 60 * 1000;
@@ -40,7 +61,7 @@ export class RaiderIoService {
       `${RaiderIoService.BASE}?region=${encodeURIComponent(region)}` +
       `&realm=${encodeURIComponent(realm)}` +
       `&name=${encodeURIComponent(name)}` +
-      '&fields=gear,mythic_plus_scores_by_season:current';
+      '&fields=gear,mythic_plus_scores_by_season:current,mythic_plus_dungeon_run_counts';
 
     let res: Response;
     try {
@@ -62,12 +83,23 @@ export class RaiderIoService {
     const body = (await res.json()) as {
       gear?: { item_level_equipped?: number };
       mythic_plus_scores_by_season?: Array<{ scores?: { all?: number } }>;
+      mythic_plus_dungeon_run_counts?: Array<{
+        season_runs_total?: number;
+        season_runs_timed?: number;
+      }>;
     };
+
+    // Vem por dungeon; o que interessa é o total da season.
+    const porDungeon = body.mythic_plus_dungeon_run_counts;
+    const soma = (campo: 'season_runs_total' | 'season_runs_timed'): number | null =>
+      porDungeon ? porDungeon.reduce((t, d) => t + (d[campo] ?? 0), 0) : null;
 
     const data: CharacterProgress = {
       // `item_level_total` vem 0 na resposta; o campo útil é o equipado.
       itemLevel: body.gear?.item_level_equipped ?? null,
       mythicPlusScore: body.mythic_plus_scores_by_season?.[0]?.scores?.all ?? null,
+      seasonRuns: soma('season_runs_total'),
+      seasonRunsTimed: soma('season_runs_timed'),
     };
 
     this.cache.set(chave, { data, fetchedAt: Date.now() });

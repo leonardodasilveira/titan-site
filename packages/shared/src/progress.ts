@@ -30,17 +30,17 @@ export const progressRowSchema = z.object({
   /** Distância para a média de chaves do time. */
   keysVsAverage: z.number().nullable(),
 
-  /** Total acumulado nas semanas em que existe registro. */
-  keysInSeason: z.number(),
-
   /**
-   * Em quantas semanas da season existe registro de chaves deste personagem.
+   * Total de M+ na season, do Raider.IO (`mythic_plus_dungeon_run_counts`).
    *
-   * Sem isso, `keysInSeason` engana: o WoWAudit só tem histórico a partir de
-   * quando passou a acompanhar o time, então um total baixo pode ser "fez
-   * pouco" ou "a gente não estava olhando". A tela mostra os dois números.
+   * Número **completo**: o Raider.IO acumula desde o início da season. Somar
+   * as semanas do WoWAudit daria um total menor, porque ele só tem histórico
+   * a partir de quando passou a acompanhar o time.
    */
-  keysWeeksKnown: z.number(),
+  keysInSeason: z.number().nullable(),
+
+  /** Quantas do total foram no tempo. */
+  keysInSeasonTimed: z.number().nullable(),
 
   /** Maior nível de chave na semana. Separa 3 chaves +10 de 3 chaves +2. */
   highestKey: z.number().nullable(),

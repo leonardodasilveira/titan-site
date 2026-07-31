@@ -62,14 +62,6 @@ export class ProgressService {
           ) ?? null)
         : null;
 
-      // Acumulado só das semanas com registro — e quantas são, porque o total
-      // sozinho engana: baixo pode ser "fez pouco" ou "não tínhamos o dado".
-      const daPessoa = snapshots.filter(
-        (o) => o.nameKey === s.nameKey && o.realmSlug === s.realmSlug,
-      );
-      const comRegistro = daPessoa.filter((o) => o.keysDone !== null);
-      const keysInSeason = comRegistro.reduce((total, o) => total + (o.keysDone ?? 0), 0);
-
       return {
         name: s.name,
         realm: s.realmSlug,
@@ -78,8 +70,10 @@ export class ProgressService {
         itemLevelVsAverage: delta(s.itemLevel, average.itemLevel),
         keysDone: s.keysDone,
         keysVsAverage: delta(s.keysDone, average.keysDone),
-        keysInSeason,
-        keysWeeksKnown: comRegistro.length,
+        // Acumulado vem do Raider.IO, não da soma das nossas semanas: ele
+        // cobre a season inteira, e a nossa só começa no tracking do WoWAudit.
+        keysInSeason: s.seasonRuns,
+        keysInSeasonTimed: s.seasonRunsTimed,
         highestKey: s.highestKey,
       };
     });

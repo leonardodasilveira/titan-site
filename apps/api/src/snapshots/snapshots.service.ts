@@ -127,6 +127,10 @@ export class SnapshotsService {
         mythicPlusScore: p?.mythicPlusScore ?? null,
         keysDone: keys?.count ?? null,
         highestKey: keys?.highest ?? null,
+        // Acumulado da season, completo. Diferente de `keysDone`, que é a
+        // semana e depende do WoWAudit ter acompanhado.
+        seasonRuns: p?.seasonRuns ?? null,
+        seasonRunsTimed: p?.seasonRunsTimed ?? null,
       };
     });
 
