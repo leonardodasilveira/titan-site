@@ -24,7 +24,16 @@ async function main() {
   });
 
   try {
-    const result = await app.get(SnapshotsService).takeSnapshot();
+    const service = app.get(SnapshotsService);
+
+    // `--backfill` traz as chaves das semanas passadas da season corrente.
+    if (process.argv.includes('--backfill')) {
+      const backfill = await service.backfillSeasonKeys();
+      console.log('\n=== BACKFILL ===');
+      console.log(JSON.stringify(backfill, null, 2));
+    }
+
+    const result = await service.takeSnapshot();
     console.log('\n=== RESULTADO ===');
     console.log(JSON.stringify(result, null, 2));
   } finally {

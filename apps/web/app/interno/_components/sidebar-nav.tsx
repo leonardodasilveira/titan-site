@@ -13,6 +13,7 @@ import { useSelectedLayoutSegment } from 'next/navigation';
 const ITENS = [
   { segment: null, href: '/interno', label: 'Home' },
   { segment: 'roster', href: '/interno/roster', label: 'Roster' },
+  { segment: 'progressao', href: '/interno/progressao', label: 'Progressão' },
 ] as const;
 
 export function SidebarNav() {

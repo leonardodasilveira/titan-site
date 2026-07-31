@@ -147,6 +147,46 @@ export class SnapshotsService {
     };
   }
 
+  /**
+   * Traz as chaves das semanas passadas da season corrente.
+   *
+   * O WoWAudit guarda o histórico por period, então a parte de chaves do
+   * relatório nasce com a season inteira em vez de vazia. Item level NÃO é
+   * backfillável — o Raider.IO só responde o agora, e ninguém guardou o
+   * passado. Por isso semanas antigas ficam com ilvl nulo, que é a verdade.
+   *
+   * Grava só as chaves, sem tocar no item level já medido da semana corrente.
+   */
+  async backfillSeasonKeys(): Promise<{ periods: number; entries: number }> {
+    const season = await this.blizzard.getCurrentSeason();
+
+    let periods = 0;
+    let entries = 0;
+
+    for (let period = season.firstPeriod; period <= season.currentPeriod; period++) {
+      try {
+        const keys = await this.wowaudit.getWeeklyKeys(period);
+        const comDados = keys.map((k) => ({
+          nameKey: k.nameKey,
+          realmSlug: k.realmSlug,
+          name: k.name,
+          keysDone: k.count,
+          highestKey: k.highest,
+        }));
+
+        entries += await this.repo.saveWeeklyKeys(period, season.id, comDados);
+        periods++;
+      } catch (err: unknown) {
+        // Uma semana que falha não pode abortar as outras 19.
+        const motivo = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Backfill do period ${period} falhou: ${motivo}`);
+      }
+    }
+
+    this.logger.log(`Backfill: ${periods} semanas, ${entries} registros de chaves`);
+    return { periods, entries };
+  }
+
   private abort(reason: string): SnapshotResult {
     this.logger.warn(`Snapshot abortado sem gravar nada: ${reason}`);
     return { status: 'aborted', reason };
