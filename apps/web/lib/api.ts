@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { sessionUserSchema, type SessionUser } from '@titan/shared';
+import { rosterSchema, sessionUserSchema, type Roster, type SessionUser } from '@titan/shared';
 import { cookies } from 'next/headers';
 import { API_URL, SESSION_COOKIE } from './config';
 
@@ -65,6 +65,31 @@ export async function getInternalSummary(): Promise<InternalSummary | null> {
 
     if (!res.ok) return null;
     return (await res.json()) as InternalSummary;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Roster do time de raid.
+ *
+ * Null quando a API recusa (401/403) ou está fora do ar. A página trata isso
+ * como "sem dado", não como erro — Regra 6.
+ */
+export async function getRoster(): Promise<Roster | null> {
+  try {
+    const res = await fetch(`${API_URL}/internal/roster`, {
+      headers: await sessionHeader(),
+      cache: 'no-store',
+      // Mais generoso que os outros: esta chamada espera o WoWAudit e ate 22
+      // perfis do Raider.IO na primeira vez, antes do cache do Nest esquentar.
+      signal: AbortSignal.timeout(20000),
+    });
+
+    if (!res.ok) return null;
+
+    const parsed = rosterSchema.safeParse(await res.json());
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }
