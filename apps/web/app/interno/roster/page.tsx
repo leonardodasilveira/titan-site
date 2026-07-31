@@ -1,12 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getRoster, getSessionUser } from '../../../lib/api';
+import { RosterTable } from './_components/roster-table';
 
 export const metadata = { title: 'Roster — Titan Inc' };
-
-/** Número grande fica legível; ausência de dado nunca vira zero. */
-function num(valor: number | null, casas = 0): string {
-  return valor === null ? '—' : valor.toLocaleString('pt-BR', { maximumFractionDigits: casas });
-}
 
 /**
  * Roster do time de raid.
@@ -14,6 +10,9 @@ function num(valor: number | null, casas = 0): string {
  * A lista vem do WoWAudit, curada à mão pelo raid leader — não do rank da
  * guilda. Rank alto não quer dizer que a pessoa está raidando, e o time
  * atravessa 6 realms, então filtrar o roster da guilda nunca daria esta lista.
+ *
+ * A tabela é client component porque ordena sem ida ao servidor: são 22 linhas
+ * e o raid leader troca de coluna várias vezes seguidas comparando gente.
  */
 export default async function RosterPage() {
   const user = await getSessionUser();
@@ -29,6 +28,7 @@ export default async function RosterPage() {
         <h1 className="text-fg mt-2 text-2xl font-semibold tracking-tight">Roster</h1>
         <p className="text-fg-muted mt-2 text-sm">
           Quem está no time hoje, segundo o WoWAudit. Item level e score de M+ vêm do Raider.IO.
+          Clique no cabeçalho para ordenar.
         </p>
       </div>
 
@@ -45,39 +45,7 @@ export default async function RosterPage() {
             </p>
           )}
 
-          <div className="border-border overflow-x-auto rounded-lg border">
-            <table className="w-full min-w-[34rem] text-sm">
-              <thead className="border-border text-fg-subtle border-b">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium">Personagem</th>
-                  <th className="px-4 py-3 text-left font-medium">Classe</th>
-                  <th className="px-4 py-3 text-left font-medium">Função</th>
-                  <th className="px-4 py-3 text-right font-medium">ilvl</th>
-                  <th className="px-4 py-3 text-right font-medium">M+</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roster.characters.map((c) => (
-                  // Nome + realm é a identidade — nome sozinho colide. Ver Regra 6.
-                  <tr
-                    key={`${c.realm}/${c.name}`}
-                    className="border-border/60 border-b last:border-0"
-                  >
-                    <td className="text-fg px-4 py-2.5 font-mono">
-                      {c.name}
-                      <span className="text-fg-subtle">-{c.realm}</span>
-                    </td>
-                    <td className="text-fg-muted px-4 py-2.5">{c.wowClass}</td>
-                    <td className="text-fg-muted px-4 py-2.5">{c.role}</td>
-                    <td className="text-fg px-4 py-2.5 text-right font-mono">{num(c.itemLevel)}</td>
-                    <td className="text-fg px-4 py-2.5 text-right font-mono">
-                      {num(c.mythicPlusScore, 1)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <RosterTable characters={roster.characters} />
 
           <p className="text-fg-subtle text-xs">
             {roster.characters.length} personagens · atualizado em{' '}
