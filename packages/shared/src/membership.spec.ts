@@ -16,6 +16,7 @@ const base: SessionUser = {
   guildRank: 4,
   hasInternalAccess: true,
   matchedCharacter: { name: 'Zenithus', realm: 'Azralon', region: 'us' },
+  characterCount: 1,
   verifiedAt: '2026-07-30T00:00:00.000Z',
 };
 

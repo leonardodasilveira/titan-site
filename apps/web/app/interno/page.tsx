@@ -133,12 +133,16 @@ export default async function InternoPage() {
             <dd className="text-fg font-mono">{user.battletag}</dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt className="text-fg-subtle">Personagem no roster</dt>
+            <dt className="text-fg-subtle">Personagem de maior rank</dt>
             <dd className="text-fg font-mono">
               {user.matchedCharacter
                 ? `${user.matchedCharacter.name}-${user.matchedCharacter.realm}`
                 : '—'}
             </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-fg-subtle">Personagens no roster</dt>
+            <dd className="text-fg font-mono">{user.characterCount}</dd>
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-fg-subtle">Rank na guilda</dt>
@@ -153,8 +157,8 @@ export default async function InternoPage() {
         </dl>
 
         <p className="text-fg-subtle border-border mt-4 border-t pt-4 text-xs">
-          O rank é registrado mas não define permissão — acesso é igual para todo membro. Ver
-          TIT-19.
+          O rank da conta é o <strong>mais alto</strong> entre seus personagens na guilda — rank 0 é
+          o mais alto de todos. É ele que libera esta área. Ver TIT-44.
         </p>
       </section>
 

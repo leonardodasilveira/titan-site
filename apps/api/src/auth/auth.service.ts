@@ -1,13 +1,33 @@
 import { randomBytes } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
-import type { User } from '@prisma/client';
 import { canAccessInternalArea, type SessionUser } from '@titan/shared';
 import { BlizzardService } from '../blizzard/blizzard.service';
 import { loadGuildConfig, type GuildConfig } from '../config/guild.config';
-import { AuthRepository } from './auth.repository';
+import {
+  AuthRepository,
+  type MatchedCharacterInput,
+  type UserWithCharacters,
+} from './auth.repository';
 
 /** Duração da sessão. Curta o suficiente para revalidar membership com frequência. */
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+
+/**
+ * O personagem que representa a conta na tela: o de rank mais alto.
+ *
+ * A guilda inteira do usuário está no banco, mas a UI mostra um. Escolher o de
+ * maior rank evita apresentar um alt de bank como se fosse o main.
+ */
+function pickRepresentative(
+  characters: readonly { name: string; realmSlug: string; rank: number }[],
+): SessionUser['matchedCharacter'] {
+  const best = characters.reduce<(typeof characters)[number] | null>(
+    (acc, c) => (acc === null || c.rank < acc.rank ? c : acc),
+    null,
+  );
+
+  return best ? { name: best.name, realm: best.realmSlug, region: 'us' } : null;
+}
 
 @Injectable()
 export class AuthService {
@@ -38,7 +58,7 @@ export class AuthService {
   async completeLogin(
     code: string,
     redirectUri: string,
-  ): Promise<{ sessionId: string; user: User }> {
+  ): Promise<{ sessionId: string; user: UserWithCharacters }> {
     const startedAt = Date.now();
 
     const userToken = await this.blizzard.exchangeCodeForUserToken(code, redirectUri);
@@ -59,28 +79,35 @@ export class AuthService {
 
     // Interseção por slug normalizado. Comparar string crua falharia
     // silenciosamente com nomes acentuados — ver toSlug no shared.
-    const rosterBySlug = new Map(roster.map((m) => [`${m.realmSlug}/${m.slug}`, m]));
+    const rosterByKey = new Map(roster.map((m) => [`${m.realmSlug}/${m.nameKey}`, m]));
 
-    let matched = null;
+    // TODOS os personagens da conta que estão no roster, não só o melhor.
+    //
+    // Guardar um só fazia o job de revalidação revogar acesso de membro
+    // legítimo quando aquele personagem específico saía da guilda, mesmo com
+    // outros ainda dentro. Ver Regra 4 do CLAUDE.md.
+    const matched: MatchedCharacterInput[] = [];
     for (const char of characters) {
-      const hit = rosterBySlug.get(`${char.realmSlug}/${char.slug}`);
+      const hit = rosterByKey.get(`${char.realmSlug}/${char.nameKey}`);
       if (hit) {
-        // Se a conta tem vários personagens na guilda, o de menor rank
-        // (mais alto na hierarquia) é o mais representativo.
-        if (!matched || hit.rank < matched.member.rank) {
-          matched = { character: char, member: hit };
-        }
+        matched.push({
+          nameKey: char.nameKey,
+          realmSlug: char.realmSlug,
+          name: hit.name,
+          rank: hit.rank,
+        });
       }
     }
+
+    // Menor número é o rank mais alto — rank 0 é o guild master.
+    const bestRank = matched.length > 0 ? Math.min(...matched.map((c) => c.rank)) : null;
 
     const user = await this.repo.upsertUser({
       battlenetId: account.battlenetId,
       battletag: account.battletag,
-      membership: matched ? 'member' : 'not_member',
-      guildRank: matched?.member.rank ?? null,
-      matchedCharacterSlug: matched?.character.slug ?? null,
-      matchedCharacterName: matched?.member.name ?? null,
-      matchedCharacterRealm: matched?.character.realmSlug ?? null,
+      membership: matched.length > 0 ? 'member' : 'not_member',
+      guildRank: bestRank,
+      characters: matched,
     });
 
     const sessionId = this.createOpaqueToken();
@@ -92,8 +119,8 @@ export class AuthService {
     // Os tempos existem porque o callback é a única parte do fluxo que a pessoa
     // espera olhando tela em branco. Sem medição, "está lento" vira chute.
     this.logger.log(
-      `Login user=${user.id} ${matched ? `membro rank=${matched.member.rank}` : 'não-membro'} ` +
-        `chars=${characters.length} ` +
+      `Login user=${user.id} ${bestRank === null ? 'não-membro' : `membro rank=${bestRank}`} ` +
+        `chars=${characters.length} na conta, ${matched.length} no roster ` +
         `(token ${afterToken - startedAt}ms, perfil+roster ${afterProfile - afterToken}ms, ` +
         `total ${Date.now() - startedAt}ms)`,
     );
@@ -105,7 +132,7 @@ export class AuthService {
   }
 
   /** Resolve a sessão do cookie. Null = sem sessão válida. */
-  async resolveSession(sessionId: string | undefined): Promise<User | null> {
+  async resolveSession(sessionId: string | undefined): Promise<UserWithCharacters | null> {
     if (!sessionId) return null;
 
     const session = await this.repo.findSessionWithUser(sessionId);
@@ -130,7 +157,7 @@ export class AuthService {
    * do servidor e o front não tem acesso a ela. A regra em si mora no shared —
    * aqui só se aplica o corte a ela.
    */
-  toSessionUser(user: User): SessionUser {
+  toSessionUser(user: UserWithCharacters): SessionUser {
     const membership = user.membership === 'member' ? ('member' as const) : ('not-member' as const);
 
     return {
@@ -142,14 +169,10 @@ export class AuthService {
         { membership, guildRank: user.guildRank },
         this.guild.rankAccessMax,
       ),
-      matchedCharacter:
-        user.matchedCharacterName && user.matchedCharacterRealm
-          ? {
-              name: user.matchedCharacterName,
-              realm: user.matchedCharacterRealm,
-              region: 'us',
-            }
-          : null,
+      // O personagem de rank mais alto representa a pessoa na UI. Empate cai
+      // no primeiro, e tanto faz: são o mesmo rank.
+      matchedCharacter: pickRepresentative(user.characters),
+      characterCount: user.characters.length,
       verifiedAt: user.verifiedAt?.toISOString() ?? null,
     };
   }

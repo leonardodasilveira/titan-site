@@ -8,8 +8,11 @@ const MENSAGENS: Record<string, string> = {
   cancelado: 'Você cancelou a autorização na Blizzard. Nada foi salvo.',
   state:
     'O retorno da Blizzard não pôde ser validado. Isso costuma acontecer quando o login demora demais ou é aberto em outra aba. Tente novamente.',
+  // Não chute a causa aqui. Esta mensagem já apontou "redirect URI" para um
+  // erro que era violação de constraint no banco, e mandou o dev investigar o
+  // portal da Blizzard por meia hora. O detalhe real está no log do servidor.
   falha:
-    'Não foi possível concluir o login. Se persistir, a redirect URI registrada no portal da Blizzard pode não bater com a configurada no servidor.',
+    'Não foi possível concluir o login. Tente de novo; se persistir, avise um oficial — o erro fica registrado no servidor.',
 };
 
 export default async function EntrarPage({

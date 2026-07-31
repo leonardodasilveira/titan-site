@@ -112,7 +112,11 @@ A liderança reorganizou os ranks da guilda. A premissa caiu, e a regra mudou ju
 
 `rank` é a **posição** do rank na lista da guilda, não uma identidade. Se a liderança inserir ou reordenar um rank no jogo, o número 4 passa a significar outra coisa e o acesso muda sozinho, **sem erro nenhum**.
 
-E não dá para detectar automaticamente: o roster da Blizzard devolve `rank` só como número, sem nome. O único alarme possível é a distribuição — o job de revalidação loga quantos membros há por rank, e uma mudança brusca é o sinal de que a régua mudou.
+E não dá para detectar automaticamente: o roster da Blizzard devolve `rank` só como número, sem nome.
+
+**O que segura a régua é a definição combinada, não o código: rank 4 é Raider.** Reorganizar ranks no jogo é uma decisão da liderança, e ela vem junto com revisar este corte.
+
+O job loga a distribuição por rank a cada rodada, mas isso é **registro, não alarme**: com ~590 membros a contagem oscila toda semana com entrada e saída, então variação não significa nada. O valor é forense — se um dia o acesso ficar estranho, o histórico mostra em que rodada a estrutura mudou de formato.
 
 Por isso o corte é configuração, nunca constante no código.
 
@@ -150,11 +154,32 @@ Não existe "bloquear outras regiões" como código separado: a verificação de
 
 **Nunca inferir região de IP, idioma do navegador ou nacionalidade.** Região US não quer dizer jogadores americanos — realms brasileiros (Azralon, Goldrinn, Nemesis, Tol Barad) são região US, e um membro legítimo pode morar na Europa e jogar em US. Filtro por geolocalização barraria membros de verdade.
 
-### Normalização de nomes
+### Normalização de nomes — duas funções, não uma
 
-Realm e nome de personagem **sempre** comparados via `toSlug()` do shared, nunca string crua.
+Nunca compare string crua. Mas **realm e personagem usam funções diferentes**, e trocar uma pela outra é bug silencioso nos dois sentidos.
 
-A Blizzard devolve realm como slug (`area-52`) em alguns endpoints e como nome exibido (`Area 52`) em outros, e nomes vêm com acento e capitalização variável. Comparar string crua faz a verificação de membership falhar **silenciosamente** — o pior tipo de bug aqui, porque parece que funcionou.
+| O quê                        | Função             | Acento     |
+| ---------------------------- | ------------------ | ---------- |
+| Realm                        | `toSlug()`         | remove     |
+| Personagem vindo da API      | `toCharacterKey()` | **mantém** |
+| Nome digitado por uma pessoa | `toSlug()`         | remove     |
+
+**Realm** precisa de `toSlug()` porque a Blizzard devolve `area-52` em alguns endpoints e `Area 52` em outros.
+
+**Personagem vindo da API precisa manter o acento.** WoW não permite dois personagens com o mesmo nome no mesmo realm, então quem chega e encontra o nome ocupado registra uma variação acentuada dele. O acento não é enfeite — é como a pessoa conseguiu o nome que queria. São personagens diferentes, com ranks diferentes, e não é caso raro: no roster da Titan Inc existem 7 grupos assim.
+
+Daí a regra que vale para qualquer identificação de personagem no sistema: **sempre o par nome + realm**, nunca o nome sozinho — em chave de banco, em lookup e na tela.
+
+```
+azralon/Shrëwd (rank 5) · Shrêwd (rank 5) · Shrèwd (rank 7)
+azralon/Jöci   (rank 7) · Joci   (rank 5) · Jôci   (rank 7)
+```
+
+Com `toSlug()` os três viram `shrewd`. Num `Map` de lookup só o último sobrevive, e a pessoa passa a ser lida com o rank de um personagem que não é dela — que é justamente o que decide acesso pela Regra 4. Falha em silêncio e parece que funcionou.
+
+`toCharacterKey()` normaliza só o que a Blizzard de fato varia entre endpoints: forma Unicode (NFC) e capitalização.
+
+**Nome digitado em formulário continua no `toSlug()`**: ali tolerar acento é desejável, porque ninguém deve perder um apply por causa de trema.
 
 ## Regra 7 — O site é o registro, o Discord é a interface
 

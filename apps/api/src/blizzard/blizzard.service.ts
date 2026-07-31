@@ -1,11 +1,13 @@
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
-import { toSlug, type Region } from '@titan/shared';
+import { toCharacterKey, toSlug, type Region } from '@titan/shared';
 import { loadGuildConfig, type GuildConfig } from '../config/guild.config';
 
 /** Membro do roster, só com o que usamos. */
 export interface RosterMember {
+  /** Nome como a Blizzard exibe, com acento. Para mostrar. */
   name: string;
-  slug: string;
+  /** Identidade, via toCharacterKey(): minúsculas COM acento. Para comparar. */
+  nameKey: string;
   realmSlug: string;
   rank: number;
 }
@@ -13,7 +15,7 @@ export interface RosterMember {
 /** Personagem de uma conta autenticada. */
 export interface AccountCharacter {
   name: string;
-  slug: string;
+  nameKey: string;
   realmSlug: string;
 }
 
@@ -213,7 +215,7 @@ export class BlizzardService implements OnModuleInit {
       for (const char of account.characters ?? []) {
         characters.push({
           name: char.name,
-          slug: toSlug(char.name),
+          nameKey: toCharacterKey(char.name),
           realmSlug: toSlug(char.realm.slug),
         });
       }
@@ -275,7 +277,7 @@ export class BlizzardService implements OnModuleInit {
 
     const members: RosterMember[] = (data.members ?? []).map((m) => ({
       name: m.character.name,
-      slug: toSlug(m.character.name),
+      nameKey: toCharacterKey(m.character.name),
       realmSlug: toSlug(m.character.realm.slug),
       rank: m.rank,
     }));
