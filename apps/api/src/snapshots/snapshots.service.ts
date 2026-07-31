@@ -1,0 +1,154 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { toCharacterKey, toSlug } from '@titan/shared';
+import { BlizzardService } from '../blizzard/blizzard.service';
+import { loadGuildConfig, type GuildConfig } from '../config/guild.config';
+import { GameVersionService } from '../gameversion/gameversion.service';
+import { RaiderIoService } from '../raiderio/raiderio.service';
+import { WowAuditService } from '../wowaudit/wowaudit.service';
+import { SnapshotsRepository, type SnapshotInput } from './snapshots.repository';
+
+export type SnapshotResult =
+  | { status: 'aborted'; reason: string }
+  | {
+      status: 'ok';
+      season: number;
+      period: number;
+      weekInSeason: number;
+      recorded: number;
+      /** Quantos ficaram sem item level. Lacuna, não zero. */
+      withoutItemLevel: number;
+    };
+
+/**
+ * Foto semanal do time de raid.
+ *
+ * Existe porque as APIs externas respondem "como está agora" e nenhuma responde
+ * "como estava em março". A linha do tempo da guilda só existe se a gente
+ * gravar — **semana não gravada não volta**. Por isso este job entra antes de
+ * qualquer tela que mostre o dado.
+ *
+ * Tira foto do **time de raid** (WoWAudit), não dos ~590 do roster: é o recorte
+ * sobre o qual o raid leader decide, e é de quem existe dado de keys.
+ */
+@Injectable()
+export class SnapshotsService {
+  private readonly logger = new Logger(SnapshotsService.name);
+  private readonly guild: GuildConfig;
+
+  constructor(
+    private readonly blizzard: BlizzardService,
+    private readonly wowaudit: WowAuditService,
+    private readonly raiderio: RaiderIoService,
+    private readonly gameVersion: GameVersionService,
+    private readonly repo: SnapshotsRepository,
+  ) {
+    this.guild = loadGuildConfig();
+  }
+
+  /**
+   * Diário, e não semanal, de propósito.
+   *
+   * A foto é sempre do period corrente, e o upsert atualiza a mesma linha —
+   * então a semana converge para o valor final até o reset, e a última gravação
+   * antes da virada é o fechamento. Rodar uma vez por semana daria o mesmo
+   * resultado no caso feliz, mas **perderia a semana inteira** se aquela única
+   * execução falhasse.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_10AM, { name: 'snapshot-semanal' })
+  async snapshotScheduled(): Promise<void> {
+    try {
+      await this.takeSnapshot();
+    } catch (err: unknown) {
+      // Exceção aqui viraria unhandled rejection no @nestjs/schedule e
+      // derrubaria o processo por causa de uma API de terceiro fora do ar.
+      this.logger.error(`Snapshot falhou: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  async takeSnapshot(): Promise<SnapshotResult> {
+    const season = await this.blizzard.getCurrentSeason();
+    const time = await this.wowaudit.getTeamCharacters();
+
+    if (time.length === 0) {
+      // Time vazio é falha de leitura, não guilda sem gente. Gravar zero aqui
+      // criaria uma semana que parece medida e não foi.
+      return this.abort('time do WoWAudit veio vazio');
+    }
+
+    // O rótulo é enfeite: se falhar, a season fica sem patch e o resto segue.
+    const patch = await this.gameVersion.getPatchLabel();
+
+    await this.repo.upsertSeason({
+      id: season.id,
+      name: season.name,
+      patch,
+      firstPeriod: season.firstPeriod,
+      periodCount: season.periodCount,
+      startedAt: season.startedAt,
+    });
+
+    // Keys da semana, por personagem. Uma chamada só para o time inteiro.
+    const keysPorPersonagem = new Map<string, { count: number; highest: number | null }>();
+    try {
+      for (const k of await this.wowaudit.getWeeklyKeys(season.currentPeriod)) {
+        keysPorPersonagem.set(`${k.realmSlug}/${k.nameKey}`, {
+          count: k.count,
+          highest: k.highest,
+        });
+      }
+    } catch (err: unknown) {
+      // Sem keys ainda dá para gravar ilvl. Melhor meia foto que nenhuma.
+      this.logger.warn(
+        `Keys da semana não vieram: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
+    const progresso = await Promise.all(
+      time.map((c) => this.raiderio.getProgress(c.name, c.realm, this.guild.region)),
+    );
+
+    const entradas: SnapshotInput[] = time.map((c, i) => {
+      const chave = `${toSlug(c.realm)}/${toCharacterKey(c.name)}`;
+      const keys = keysPorPersonagem.get(chave);
+      const p = progresso[i];
+
+      return {
+        period: season.currentPeriod,
+        seasonId: season.id,
+        nameKey: toCharacterKey(c.name),
+        realmSlug: toSlug(c.realm),
+        name: c.name,
+        // Nulo quando não deu para medir. NUNCA zero: o gráfico tem que
+        // mostrar lacuna, senão vira "a pessoa parou de jogar".
+        itemLevel: p?.itemLevel ?? null,
+        mythicPlusScore: p?.mythicPlusScore ?? null,
+        keysDone: keys?.count ?? null,
+        highestKey: keys?.highest ?? null,
+      };
+    });
+
+    const recorded = await this.repo.saveSnapshots(entradas);
+    const withoutItemLevel = entradas.filter((e) => e.itemLevel === null).length;
+
+    this.logger.log(
+      `Snapshot period=${season.currentPeriod} season=${season.id} ` +
+        `(${patch ?? 'patch?'}, semana ${season.weekInSeason}/${season.periodCount}) — ` +
+        `${recorded} personagens, ${withoutItemLevel} sem item level`,
+    );
+
+    return {
+      status: 'ok',
+      season: season.id,
+      period: season.currentPeriod,
+      weekInSeason: season.weekInSeason,
+      recorded,
+      withoutItemLevel,
+    };
+  }
+
+  private abort(reason: string): SnapshotResult {
+    this.logger.warn(`Snapshot abortado sem gravar nada: ${reason}`);
+    return { status: 'aborted', reason };
+  }
+}

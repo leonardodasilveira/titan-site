@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { toCharacterKey, toSlug } from '@titan/shared';
 
 /** Personagem do time, já traduzido do formato do WoWAudit. */
 export interface TeamCharacter {
@@ -6,6 +7,17 @@ export interface TeamCharacter {
   realm: string;
   wowClass: string;
   role: string;
+}
+
+/** Keys que um personagem fechou numa semana. */
+export interface WeeklyKeys {
+  nameKey: string;
+  realmSlug: string;
+  name: string;
+  /** Quantas keys fechou. */
+  count: number;
+  /** Maior nível. Distingue 3 keys +10 de 3 keys +2. */
+  highest: number | null;
 }
 
 /** TTL do cache. O raid leader mexe no time raramente. */
@@ -79,5 +91,48 @@ export class WowAuditService {
       return this.cache.characters;
     }
     throw new Error(`WoWAudit falhou e não há cache anterior: ${reason}`);
+  }
+
+  /**
+   * Keys fechadas por cada personagem numa semana do jogo.
+   *
+   * O Raider.IO **não serve** para isto: `mythic_plus_recent_runs` devolve no
+   * máximo 10 e `best_runs` no máximo 8, então contá-los erraria justamente
+   * para quem mais joga. Aqui vem a lista inteira, com o nível de cada key.
+   *
+   * `period` é a semana da Blizzard, não uma data nossa — já vem alinhada ao
+   * reset da região, sem fuso e sem ambiguidade de virada.
+   */
+  async getWeeklyKeys(period: number): Promise<WeeklyKeys[]> {
+    const key = process.env.WOW_AUDIT_KEY;
+    if (!key) throw new Error('WOW_AUDIT_KEY não configurada. Ver .env.example.');
+
+    const res = await fetch(`${WowAuditService.BASE}/historical_data?period=${period}`, {
+      headers: { Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!res.ok) throw new Error(`WoWAudit historical_data HTTP ${res.status}`);
+
+    const body = (await res.json()) as {
+      characters: Array<{
+        name: string;
+        realm: string;
+        data?: { dungeons_done?: Array<{ level: number }> };
+      }>;
+    };
+
+    return body.characters.map((c) => {
+      const feitas = c.data?.dungeons_done ?? [];
+      const niveis = feitas.map((d) => d.level);
+
+      return {
+        nameKey: toCharacterKey(c.name),
+        realmSlug: toSlug(c.realm),
+        name: c.name,
+        count: feitas.length,
+        highest: niveis.length > 0 ? Math.max(...niveis) : null,
+      };
+    });
   }
 }
