@@ -126,3 +126,84 @@ model Session {
   @@index([userId])
   @@index([expiresAt])
 }
+
+/// Season de Mythic+, como a Blizzard numera.
+///
+/// A season é o gatilho de "o tier virou": o id muda quando ela começa de
+/// verdade, e não quando o patch entra — os dois não coincidem. Em 2026 o patch
+/// 12.1 entra em 11/08 e a season só começa em 18/08.
+///
+/// NÃO calcular a próxima como `atual + 1`: o index da Blizzard devolve
+/// 1..15 e 17 — a season 16 não existe.
+model GameSeason {
+  /// Id da Blizzard. Não é sequencial e não é nosso.
+  id Int @id
+
+  /// "Midnight Season 1".
+  name String
+
+  /// Rótulo que a guilda reconhece: "12.0". Vem do servidor de patch e é
+  /// APENAS exibição — nunca decide nada. Nulo se a fonte falhar.
+  patch String?
+
+  /// Primeiro period da season. `periodCorrente - firstPeriod + 1` é a semana.
+  firstPeriod Int
+
+  /// Quantos periods a season tem até agora.
+  periodCount Int
+
+  startedAt DateTime
+
+  snapshots CharacterSnapshot[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+/// Foto semanal de um personagem do time de raid.
+///
+/// Existe porque as APIs externas respondem "como está agora" e nenhuma
+/// responde "como estava em março". A linha do tempo só existe se a gente
+/// gravar — semana não gravada não volta.
+///
+/// A chave temporal é o **period da Blizzard**, não uma data nossa: period é a
+/// semana do jogo, já alinhada ao reset da região, então não há fuso nem
+/// ambiguidade de virada de semana.
+model CharacterSnapshot {
+  id String @id @default(cuid())
+
+  /// Semana do jogo.
+  period Int
+
+  seasonId Int
+  season   GameSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  /// Identidade: nome + realm. Ver Regra 6 — nome sozinho colide.
+  nameKey   String
+  realmSlug String
+
+  /// Nome exibido, com acento.
+  name String
+
+  /// `gear.item_level_equipped` do Raider.IO. Nulo = não deu para medir na
+  /// semana. NUNCA gravar 0 no lugar: "sem dado" e "sem gear" são coisas
+  /// diferentes, e o gráfico tem que mostrar lacuna.
+  itemLevel Float?
+
+  /// Score de M+ da season.
+  mythicPlusScore Float?
+
+  /// Quantas keys a pessoa fechou na semana, do WoWAudit.
+  keysDone Int?
+
+  /// Maior nível de key na semana. Distingue 3 keys +10 de 3 keys +2.
+  highestKey Int?
+
+  recordedAt DateTime @default(now())
+
+  /// Uma foto por personagem por semana. Rodar o job duas vezes atualiza a
+  /// linha, não cria outra.
+  @@unique([period, realmSlug, nameKey])
+  @@index([seasonId])
+  @@index([realmSlug, nameKey])
+}

@@ -20,6 +20,27 @@ export interface AccountCharacter {
 }
 
 /**
+ * Season de M+ vigente, com a semana em que estamos.
+ *
+ * É a fonte AUTORITATIVA de "o tier virou". Patch e season não coincidem: em
+ * 2026 o patch 12.1 entra em 11/08 e a season só começa em 18/08. Ancorar em
+ * patch zeraria relatório uma semana cedo.
+ */
+export interface CurrentSeason {
+  id: number;
+  name: string;
+  startedAt: Date;
+  /** Primeiro period da season. */
+  firstPeriod: number;
+  /** Quantos periods a season tem até agora. */
+  periodCount: number;
+  /** Period corrente do jogo — a semana, já alinhada ao reset da região. */
+  currentPeriod: number;
+  /** 1 na primeira semana da season. */
+  weekInSeason: number;
+}
+
+/**
  * Roster + a procedência do dado.
  *
  * Existe porque "roster" e "roster confiável" não são a mesma coisa. Para
@@ -130,6 +151,75 @@ export class BlizzardService implements OnModuleInit {
       expiresAt: Date.now() + data.expires_in * 1000,
     };
     return data.access_token;
+  }
+
+  /**
+   * Season de M+ vigente e em que semana dela estamos.
+   *
+   * Duas armadilhas tratadas aqui:
+   *
+   * - **a API é reativa, não preditiva.** Em 30/07/2026 a season 18 devolvia
+   *   404 mesmo com o patch a 11 dias. Ela só publica quando começa — e é
+   *   justamente isso que faz o gap entre patch e season se resolver sozinho.
+   * - **`current_season` sozinho não basta.** Se a Blizzard publicar uma season
+   *   com `start_timestamp` no futuro, ela ainda não começou.
+   *
+   * Nunca calcular a próxima como `id + 1`: o index devolve 1..15 e 17, sem 16.
+   */
+  async getCurrentSeason(): Promise<CurrentSeason> {
+    const token = await this.getClientToken();
+    const ns = `?namespace=dynamic-${this.region}&locale=en_US`;
+
+    const index = (await this.getJson(
+      `${this.apiHost}/data/wow/mythic-keystone/season/index${ns}`,
+      token,
+    )) as { current_season: { id: number } };
+
+    const season = (await this.getJson(
+      `${this.apiHost}/data/wow/mythic-keystone/season/${index.current_season.id}${ns}`,
+      token,
+    )) as {
+      id: number;
+      season_name: string;
+      start_timestamp: number;
+      periods: Array<{ id: number }>;
+    };
+
+    const periods = season.periods.map((p) => p.id).sort((a, b) => a - b);
+    const firstPeriod = periods[0];
+    const currentPeriod = periods[periods.length - 1];
+
+    if (firstPeriod === undefined || currentPeriod === undefined) {
+      throw new Error(`Season ${season.id} veio sem periods`);
+    }
+
+    if (season.start_timestamp > Date.now()) {
+      throw new Error(
+        `Season ${season.id} ainda não começou (início em ` +
+          `${new Date(season.start_timestamp).toISOString()})`,
+      );
+    }
+
+    return {
+      id: season.id,
+      name: season.season_name,
+      startedAt: new Date(season.start_timestamp),
+      firstPeriod,
+      periodCount: periods.length,
+      currentPeriod,
+      weekInSeason: currentPeriod - firstPeriod + 1,
+    };
+  }
+
+  /** GET autenticado que devolve JSON, ou lança com o status. */
+  private async getJson(url: string, token: string): Promise<unknown> {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status} em ${new URL(url).pathname}`);
+    return res.json();
   }
 
   /** Troca o `code` do callback pelo token do usuário. */

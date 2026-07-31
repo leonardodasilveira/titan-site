@@ -9,6 +9,7 @@ import { InternalModule } from './internal/internal.module';
 import { MembershipModule } from './membership/membership.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RosterModule } from './roster/roster.module';
+import { SnapshotsModule } from './snapshots/snapshots.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RosterModule } from './roster/roster.module';
     AuthModule,
     InternalModule,
     RosterModule,
+    SnapshotsModule,
     MembershipModule,
     HealthModule,
   ],
