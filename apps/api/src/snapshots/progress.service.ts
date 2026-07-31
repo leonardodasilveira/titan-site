@@ -62,10 +62,13 @@ export class ProgressService {
           ) ?? null)
         : null;
 
-      // Acumulado da season: soma só as semanas medidas dessa pessoa.
-      const keysInSeason = snapshots
-        .filter((o) => o.nameKey === s.nameKey && o.realmSlug === s.realmSlug)
-        .reduce((total, o) => total + (o.keysDone ?? 0), 0);
+      // Acumulado só das semanas com registro — e quantas são, porque o total
+      // sozinho engana: baixo pode ser "fez pouco" ou "não tínhamos o dado".
+      const daPessoa = snapshots.filter(
+        (o) => o.nameKey === s.nameKey && o.realmSlug === s.realmSlug,
+      );
+      const comRegistro = daPessoa.filter((o) => o.keysDone !== null);
+      const keysInSeason = comRegistro.reduce((total, o) => total + (o.keysDone ?? 0), 0);
 
       return {
         name: s.name,
@@ -76,6 +79,7 @@ export class ProgressService {
         keysDone: s.keysDone,
         keysVsAverage: delta(s.keysDone, average.keysDone),
         keysInSeason,
+        keysWeeksKnown: comRegistro.length,
         highestKey: s.highestKey,
       };
     });
