@@ -65,39 +65,53 @@ export class AttendanceRepository {
     return entries.length;
   }
 
-  /** Noites já gravadas, para o job saber o que pular. */
-  async listRecordedNightIds(): Promise<Set<number>> {
-    const linhas = await this.prisma.raidNight.findMany({ select: { id: true } });
-    return new Set(linhas.map((l) => l.id));
-  }
-
-  /** Noites com presença, da mais recente para a mais antiga. */
-  listNights(limite: number, seasonId?: number) {
+  /** Noites com o detalhe de todo mundo. Só oficial chega aqui — Regra 7. */
+  listNights(limite: number) {
     return this.prisma.raidNight.findMany({
-      where: seasonId === undefined ? {} : { seasonId },
       orderBy: { date: 'desc' },
       take: limite,
-      include: {
-        attendance: {
-          orderBy: [{ name: 'asc' }],
-        },
-      },
+      include: { attendance: { orderBy: [{ name: 'asc' }] } },
     });
   }
 
   /**
-   * Histórico de um personagem.
+   * Histórico dos personagens de UMA conta.
    *
    * Existe separado de `listNights` porque a Regra 7 é explícita: membro vê o
-   * PRÓPRIO histórico inteiro, e não o de outro membro. Filtrar no banco em vez
-   * de na tela é o que impede que o dado dos outros trafegue.
+   * próprio histórico inteiro, e não o de outro membro. **O filtro é no banco**,
+   * não na tela — assim o dado dos outros nem trafega, e um bug de render não
+   * vira vazamento.
+   *
+   * Recebe a lista de personagens porque uma conta tem N, e o histórico da
+   * pessoa é o de todos eles juntos. Ver Regra 4.
    */
-  listForCharacter(realmKey: string, nameKey: string, limite: number) {
+  listForCharacters(chars: Array<{ realmKey: string; nameKey: string }>, limite: number) {
+    if (chars.length === 0) return Promise.resolve([]);
+
     return this.prisma.raidAttendance.findMany({
-      where: { realmKey, nameKey },
+      where: { OR: chars.map((c) => ({ realmKey: c.realmKey, nameKey: c.nameKey })) },
       orderBy: { raidNight: { date: 'desc' } },
       take: limite,
       include: { raidNight: true },
+    });
+  }
+
+  /**
+   * Grava a anotação do raid leader.
+   *
+   * Só os campos de anotação. O resto da linha é fato coletado e não se edita
+   * à mão — o humano corrige o **significado**, não o observado.
+   */
+  async saveNote(id: string, note: string | null, by: string) {
+    return this.prisma.raidAttendance.update({
+      where: { id },
+      data: {
+        note,
+        // Apagar a nota apaga a autoria junto; guardar quem escreveu um texto
+        // que não existe mais não serve para nada.
+        noteBy: note === null ? null : by,
+        noteAt: note === null ? null : new Date(),
+      },
     });
   }
 }

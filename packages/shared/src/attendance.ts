@@ -132,6 +132,9 @@ export function needsReview(state: AttendanceState): boolean {
 }
 
 export const attendanceEntrySchema = z.object({
+  /** Id da linha. É o alvo da anotação do raid leader. */
+  id: z.string(),
+
   /** Identidade sempre nome + realm, nunca o nome sozinho — Regra 6. */
   name: z.string(),
   realm: z.string(),
@@ -157,7 +160,7 @@ export const attendanceEntrySchema = z.object({
 });
 export type AttendanceEntry = z.infer<typeof attendanceEntrySchema>;
 
-export const raidNightSchema = z.object({
+export const raidNightInfoSchema = z.object({
   id: z.number().int(),
 
   /** Data de calendário no fuso da guilda, "2026-07-28". */
@@ -190,7 +193,41 @@ export const raidNightSchema = z.object({
    * inexistente.
    */
   hasSignups: z.boolean(),
+});
+export type RaidNightInfo = z.infer<typeof raidNightInfoSchema>;
 
+/** A noite com quem esteve nela. Só oficial recebe isto — Regra 7. */
+export const raidNightSchema = raidNightInfoSchema.extend({
   entries: attendanceEntrySchema.array(),
 });
 export type RaidNight = z.infer<typeof raidNightSchema>;
+
+/** Visão do oficial: as noites, com o detalhe de todo mundo. */
+export const attendanceReportSchema = z.object({
+  nights: raidNightSchema.array(),
+});
+export type AttendanceReport = z.infer<typeof attendanceReportSchema>;
+
+/**
+ * Visão do membro: o **próprio** histórico, inteiro.
+ *
+ * Uma conta tem N personagens, então cada linha diz de qual personagem é — a
+ * pessoa que raida em dois chars precisa ver os dois. Ver Regra 4.
+ */
+export const myAttendanceSchema = z.object({
+  nights: raidNightInfoSchema
+    .extend({
+      entry: attendanceEntrySchema,
+    })
+    .array(),
+
+  /** Noites com evidência de log, e em quantas a pessoa esteve. */
+  summary: z.object({
+    /** Noites em que há como afirmar alguma coisa (`sem-dado` fora). */
+    counted: z.number().int(),
+    present: z.number().int(),
+    /** Noites em que confirmou e não apareceu. */
+    missed: z.number().int(),
+  }),
+});
+export type MyAttendance = z.infer<typeof myAttendanceSchema>;

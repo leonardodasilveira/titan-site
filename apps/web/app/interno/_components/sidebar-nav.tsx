@@ -15,6 +15,7 @@ const ITENS = [
   { segment: 'roster', href: '/interno/roster', label: 'Roster' },
   { segment: 'progressao', href: '/interno/progressao', label: 'Progressão' },
   { segment: 'raid', href: '/interno/raid', label: 'Raid' },
+  { segment: 'presenca', href: '/interno/presenca', label: 'Presença' },
 ] as const;
 
 export function SidebarNav() {
