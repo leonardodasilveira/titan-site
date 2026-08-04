@@ -1,5 +1,6 @@
 export * from './wow.js';
 export * from './application.js';
+export * from './attendance.js';
 export * from './health.js';
 export * from './membership.js';
 export * from './progress.js';

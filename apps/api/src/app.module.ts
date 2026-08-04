@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AttendanceModule } from './attendance/attendance.module';
 import { AuthModule } from './auth/auth.module';
 import { BlizzardModule } from './blizzard/blizzard.module';
 import { HealthModule } from './health/health.module';
@@ -24,6 +25,7 @@ import { SnapshotsModule } from './snapshots/snapshots.module';
     RosterModule,
     SnapshotsModule,
     RaidProgressModule,
+    AttendanceModule,
     MembershipModule,
     HealthModule,
   ],
