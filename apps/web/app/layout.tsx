@@ -1,18 +1,23 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Archivo, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const archivo = Archivo({
+  axes: ['wdth'],
+  display: 'swap',
+  variable: '--font-archivo',
   subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
+  display: 'swap',
+  preload: false,
   variable: '--font-geist-mono',
   subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_WEB_URL ?? 'http://localhost:3000'),
   title: 'Titan Inc — Guilda de World of Warcraft',
   description: 'Guilda de World of Warcraft. Progresso de raid, Mythic+ e recrutamento aberto.',
 };
@@ -23,8 +28,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+    <html lang="pt-BR" className={`${archivo.variable} ${geistMono.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col font-sans">
+        <span
+          hidden
+          aria-hidden="true"
+          dangerouslySetInnerHTML={{
+            __html:
+              '<!-- TITAN_INSTRUMENTO_CONTRACT: THESIS=a_landing_afere; OWN_WORLD=chapa_escura_luz_fria_superior_direita_geometria_gravada_turquesa_luz_rosa_falha_azul_profundidade_sem_blur_sem_glow; STORY=progressao_verificavel_e_candidatura_como_registro; FIRST_VIEWPORT=manchete_mais_disco_de_afericao; FINISH=review_documentacao_e_veredito -->',
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

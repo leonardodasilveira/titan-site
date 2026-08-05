@@ -16,7 +16,9 @@
 
   --color-fg: #e8eaf0;
   --color-fg-muted: #9aa1b1;
-  --color-fg-subtle: #6b7280;
+  /* O valor anterior (#6b7280) media 4.02:1 sobre bg e reprovava texto de
+     11px. Este é o fallback obrigatório de contraste definido no §3.2. */
+  --color-fg-subtle: #7d8494;
 
   /* Turquesa da âncora. É a cor da logo com melhor legibilidade sobre o
      fundo escuro, então virou o destaque principal. */
@@ -30,14 +32,49 @@
   /* Azul do "TITAN" no wordmark. */
   --color-brand-blue: #4878c0;
 
+  /* A luz superior e o sulco inferior formam o par obrigatório de toda chapa. */
+  --color-edge: rgba(232, 234, 240, 0.07);
+  --color-groove: rgba(0, 0, 0, 0.45);
+
+  /* Campo atmosférico da landing. O núcleo claro só aparece em gradientes. */
+  --color-deep: #10151f;
+  --color-deep-lit: #16203a;
+
   --color-ok: #4ade80;
   --color-danger: #f87171;
 
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-archivo);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background-color: var(--color-bg);
   color: var(--color-fg);
+}
+
+/**
+ * Toda superfície elevada recebe a mesma luz superior-direita e o mesmo
+ * sulco inferior. Centralizar isso impede que a direção da luz derive entre
+ * as seções quando a landing crescer.
+ */
+@utility chapa {
+  border-top: 1px solid var(--color-edge);
+  border-bottom: 1px solid var(--color-groove);
+  border-radius: 3px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-surface) 98%, var(--color-fg) 2%),
+    var(--color-surface)
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
