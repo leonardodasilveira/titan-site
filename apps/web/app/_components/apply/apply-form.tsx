@@ -23,10 +23,8 @@ const classePt: Record<string, string> = {
 };
 export function ApplyForm() {
   const [erros, setErros] = useState<Record<string, string>>({});
-  function submeter(evento: React.FormEvent<HTMLFormElement>) {
-    evento.preventDefault();
-    const form = new FormData(evento.currentTarget);
-    const valor = {
+  function dados(form: FormData) {
+    return {
       character: { name: form.get('character.name'), realm: form.get('character.realm') },
       class: form.get('class'),
       mainRole: form.get('mainRole'),
@@ -39,7 +37,28 @@ export function ApplyForm() {
       warcraftLogsUrl: form.get('warcraftLogsUrl') || undefined,
       website: form.get('website') || undefined,
     };
-    const resultado = createApplicationSchema.safeParse(valor);
+  }
+  function mensagem(texto: string) {
+    return texto === 'Required' ? 'Este campo é obrigatório.' : texto;
+  }
+  function validarAoSair(evento: React.FocusEvent<HTMLFormElement>) {
+    const nome = (evento.target as unknown as HTMLInputElement | HTMLTextAreaElement).name;
+    if (!nome || nome === 'website') return;
+    const resultado = createApplicationSchema.safeParse(dados(new FormData(evento.currentTarget)));
+    const issue = resultado.success
+      ? undefined
+      : resultado.error.issues.find((item) => item.path.join('.') === nome);
+    setErros((atuais) => {
+      const novos = { ...atuais };
+      if (issue) novos[nome] = mensagem(issue.message);
+      else delete novos[nome];
+      return novos;
+    });
+  }
+  function submeter(evento: React.FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+    const form = new FormData(evento.currentTarget);
+    const resultado = createApplicationSchema.safeParse(dados(form));
     if (resultado.success) {
       setErros({
         envio: 'O envio pelo site ainda não está aberto. Seus dados não foram enviados.',
@@ -48,14 +67,13 @@ export function ApplyForm() {
     }
     const novos: Record<string, string> = {};
     for (const issue of resultado.error.issues)
-      novos[issue.path.join('.')] ??=
-        issue.message === 'Required' ? 'Este campo é obrigatório.' : issue.message;
+      novos[issue.path.join('.')] ??= mensagem(issue.message);
     setErros(novos);
     const primeiro = resultado.error.issues[0]?.path.join('.');
     if (primeiro) document.getElementById(primeiro)?.focus();
   }
   return (
-    <form noValidate onSubmit={submeter} className="mt-10 space-y-8">
+    <form noValidate onSubmit={submeter} onBlur={validarAoSair} className="mt-10 space-y-8">
       {Object.keys(erros).length > 0 && (
         <Chapa className="p-5">
           <div role="alert">
@@ -105,6 +123,23 @@ export function ApplyForm() {
             <label key={classe} className="text-fg-muted flex min-h-11 items-center gap-3 text-sm">
               <input required type="radio" name="class" value={classe} className="accent-accent" />
               {classePt[classe] ?? classe}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend className="text-fg-subtle font-mono text-[11px] tracking-[0.14em] uppercase">
+          Função secundária
+        </legend>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <label className="text-fg-muted flex min-h-11 items-center gap-3 text-sm">
+            <input defaultChecked type="radio" name="offRole" value="" className="accent-accent" />
+            Nenhuma
+          </label>
+          {ROLES.map((role) => (
+            <label key={role} className="text-fg-muted flex min-h-11 items-center gap-3 text-sm">
+              <input type="radio" name="offRole" value={role} className="accent-accent" />
+              {role}
             </label>
           ))}
         </div>
