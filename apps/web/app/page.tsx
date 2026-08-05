@@ -1,13 +1,8 @@
 import { Hero } from './_components/hero';
+import { Sobre } from './_components/sobre';
 import { Rotulo } from './_components/ui/rotulo';
 
 const secoes = [
-  {
-    id: 'sobre',
-    tituloId: 'sobre-titulo',
-    rotulo: 'Sobre',
-    titulo: 'Cinco horas por semana, desde 2009',
-  },
   {
     id: 'tripulacao',
     tituloId: 'tripulacao-titulo',
@@ -26,6 +21,7 @@ export default function Home() {
   return (
     <>
       <Hero />
+      <Sobre />
       {secoes.map((secao) => (
         <section
           key={secao.id}
