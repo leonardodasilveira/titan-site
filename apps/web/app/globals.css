@@ -52,6 +52,31 @@ body {
   color: var(--color-fg);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+section[id] {
+  scroll-margin-top: 4rem;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-assentamento='agulha'] {
+    transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  [data-assentamento='detente'] {
+    transition:
+      opacity 150ms ease-out,
+      color 150ms ease-out;
+  }
+}
+
 /**
  * Toda superfície elevada recebe a mesma luz superior-direita e o mesmo
  * sulco inferior. Centralizar isso impede que a direção da luz derive entre

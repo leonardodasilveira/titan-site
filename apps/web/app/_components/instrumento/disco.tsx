@@ -51,13 +51,14 @@ export function Disco({
         );
       })}
       <line
+        data-assentamento="agulha"
         x1="200"
         y1="200"
         x2={ponta.x}
         y2={ponta.y}
         stroke="var(--color-accent)"
         strokeWidth="2"
-        className="origin-[200px_200px] transition-transform duration-700"
+        className="origin-[200px_200px]"
       />
       <circle cx="200" cy="200" r="16" fill="var(--color-surface)" stroke="var(--color-edge)" />
     </svg>
