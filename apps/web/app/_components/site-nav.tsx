@@ -2,6 +2,7 @@
 
 import type { SessionUser } from '@titan/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { LoginButton } from './login-button';
 import { NavPainel } from './nav-painel';
 import { Wordmark } from './ui/wordmark';
 
@@ -86,12 +87,7 @@ export function SiteNav({ sessao }: { sessao: SessionUser | null }) {
           >
             Candidatar-se
           </a>
-          <a
-            href={sessao ? '/interno' : '/entrar'}
-            className="text-fg-muted hover:text-fg inline-flex min-h-11 items-center px-2 font-mono text-[11px] tracking-[0.14em] uppercase"
-          >
-            {sessao ? 'Área de membros' : 'Entrar'}
-          </a>
+          <LoginButton sessao={sessao} />
         </div>
 
         <div className="flex items-center gap-2 lg:hidden">
@@ -108,13 +104,7 @@ export function SiteNav({ sessao }: { sessao: SessionUser | null }) {
             <span className="truncate max-[340px]:sr-only">{nomeAtivo}</span>
             <span aria-hidden>⌄</span>
           </button>
-          <a
-            href={sessao ? '/interno' : '/entrar'}
-            aria-label={sessao ? 'Área de membros' : 'Entrar'}
-            className="text-fg-muted focus-visible:outline-accent inline-flex min-h-11 min-w-11 items-center justify-center font-mono text-[11px] uppercase focus-visible:outline-2"
-          >
-            <span aria-hidden>↗</span>
-          </a>
+          <LoginButton sessao={sessao} compacto />
         </div>
       </nav>
       <NavPainel aberto={aberto} aoFechar={fechar} gatilho={gatilho} />
