@@ -114,3 +114,17 @@ section[id] {
     transform: translateY(0);
   }
 }
+
+@media (max-width: 767px) and (orientation: landscape) and (max-height: 620px) {
+  #topo > div:last-child {
+    min-height: auto;
+    grid-template-columns: minmax(0, 1fr) 200px;
+    align-items: center;
+    padding-block: 2rem;
+  }
+  #topo > div:last-child > div:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+    width: 200px;
+  }
+}

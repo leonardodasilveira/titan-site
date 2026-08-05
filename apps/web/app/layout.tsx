@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { Archivo, Geist_Mono } from 'next/font/google';
 import { getSessionUser } from '../lib/api';
-import { SiteFooter } from './_components/site-footer';
-import { SiteNav } from './_components/site-nav';
+import { SiteShell } from './_components/site-shell';
 import './globals.css';
 
 const archivo = Archivo({
@@ -42,17 +41,7 @@ export default async function RootLayout({
               '<!-- TITAN_INSTRUMENTO_CONTRACT: THESIS=a_landing_afere; OWN_WORLD=chapa_escura_luz_fria_superior_direita_geometria_gravada_turquesa_luz_rosa_falha_azul_profundidade_sem_blur_sem_glow; STORY=progressao_verificavel_e_candidatura_como_registro; FIRST_VIEWPORT=manchete_mais_disco_de_afericao; FINISH=review_documentacao_e_veredito -->',
           }}
         />
-        <a
-          href="#conteudo"
-          className="chapa text-fg focus-visible:outline-accent fixed top-3 left-3 z-[100] -translate-y-24 px-4 py-3 text-sm transition-transform focus:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2"
-        >
-          Pular para o conteúdo
-        </a>
-        <SiteNav sessao={sessao} />
-        <main id="conteudo" className="flex flex-1 flex-col" tabIndex={-1}>
-          {children}
-        </main>
-        <SiteFooter />
+        <SiteShell sessao={sessao}>{children}</SiteShell>
       </body>
     </html>
   );
