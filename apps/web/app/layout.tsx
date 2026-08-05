@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { Archivo, Geist_Mono } from 'next/font/google';
+import { getSessionUser } from '../lib/api';
+import { SiteFooter } from './_components/site-footer';
+import { SiteNav } from './_components/site-nav';
 import './globals.css';
 
 const archivo = Archivo({
@@ -22,11 +25,12 @@ export const metadata: Metadata = {
   description: 'Guilda de World of Warcraft. Progresso de raid, Mythic+ e recrutamento aberto.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const sessao = await getSessionUser();
   return (
     <html lang="pt-BR" className={`${archivo.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
@@ -44,9 +48,11 @@ export default function RootLayout({
         >
           Pular para o conteúdo
         </a>
+        <SiteNav sessao={sessao} />
         <main id="conteudo" className="flex flex-1 flex-col" tabIndex={-1}>
           {children}
         </main>
+        <SiteFooter />
       </body>
     </html>
   );
