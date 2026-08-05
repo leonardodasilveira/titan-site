@@ -1,4 +1,5 @@
 import type { RaidProgressReport } from '@titan/shared';
+import './index';
 
 const nomes = [
   'O Vigia',
