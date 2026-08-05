@@ -5,6 +5,7 @@ import { Wordmark } from './ui/wordmark';
 export function SiteFooter() {
   return (
     <footer className="border-border bg-bg relative overflow-hidden border-t px-6 pt-24 pb-12 md:px-8 xl:px-12">
+      <h2 className="sr-only">Informações e conformidade</h2>
       <Marca className="text-fg pointer-events-none absolute right-[-60px] bottom-[-110px] size-80 opacity-[0.04]" />
       <div className="relative mx-auto grid max-w-[1120px] gap-12 md:grid-cols-3">
         <div>

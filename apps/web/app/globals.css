@@ -104,6 +104,15 @@ section[id] {
   }
 }
 
+@media (prefers-contrast: more) {
+  :focus-visible {
+    outline-width: 3px;
+  }
+  nav {
+    border-color: var(--color-fg-subtle);
+  }
+}
+
 @keyframes assentar {
   from {
     opacity: 0;

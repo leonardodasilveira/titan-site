@@ -55,6 +55,15 @@ export function SiteNav({ sessao }: { sessao: SessionUser | null }) {
         aria-label="Principal"
         className="mx-auto flex h-14 max-w-[1120px] items-center justify-between px-5 md:h-[60px] md:px-8 lg:h-16 xl:px-12"
       >
+        <noscript>
+          <div className="text-fg flex w-full gap-5 overflow-x-auto font-mono text-[11px] uppercase lg:hidden">
+            {SECOES.map((secao) => (
+              <a key={secao.id} href={`#${secao.id}`} className="inline-flex min-h-11 items-center">
+                {secao.texto}
+              </a>
+            ))}
+          </div>
+        </noscript>
         <a
           href="#topo"
           aria-label="Titan Inc — ir para o topo"

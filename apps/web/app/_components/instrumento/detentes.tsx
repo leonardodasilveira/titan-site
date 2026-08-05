@@ -19,6 +19,19 @@ export function Detentes({
   const indice = fixo ?? hover ?? padrao;
   const boss = bosses[indice];
   const leitura = boss ? lerBoss(boss, dificuldade) : null;
+  function teclado(evento: React.KeyboardEvent<HTMLButtonElement>, i: number) {
+    if (evento.key === 'Escape') {
+      setFixo(null);
+      setHover(padrao);
+      return;
+    }
+    if (evento.key !== 'ArrowLeft' && evento.key !== 'ArrowRight') return;
+    evento.preventDefault();
+    const proximo = (i + (evento.key === 'ArrowRight' ? 1 : -1) + bosses.length) % bosses.length;
+    evento.currentTarget.parentElement
+      ?.querySelectorAll<HTMLButtonElement>('button')
+      [proximo]?.focus();
+  }
   return (
     <>
       <div role="group" aria-label="Bosses da raid" className="absolute inset-0">
@@ -39,6 +52,7 @@ export function Detentes({
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
               onClick={() => setFixo((atual) => (atual === i ? null : i))}
+              onKeyDown={(evento) => teclado(evento, i)}
               className="focus-visible:outline-accent absolute size-11 -translate-1/2 rounded-full focus-visible:outline-2"
               style={{ left: `${ponto.x / 4}%`, top: `${ponto.y / 4}%` }}
             />
