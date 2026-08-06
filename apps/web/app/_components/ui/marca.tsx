@@ -4,7 +4,7 @@ interface MarcaProps {
   titulo?: string;
 }
 
-/** A4 provisório: o instrumento reduzido, reconhecível sem depender de detalhe. */
+/** A4 provisório: marca reduzida de legado, independente da progressão da navbar. */
 export function Marca({ className = '', detentesAcesas = 2, titulo }: MarcaProps) {
   return (
     <svg

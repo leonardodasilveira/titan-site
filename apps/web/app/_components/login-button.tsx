@@ -115,7 +115,7 @@ export function LoginButton({
               : ''}
       </span>
       {estado === 'bloqueado' && (
-        <a href={`${API_URL}/auth/battlenet`} className="text-highlight text-xs underline">
+        <a href={`${API_URL}/auth/battlenet`} className="text-danger text-xs underline">
           Entrar por página inteira
         </a>
       )}

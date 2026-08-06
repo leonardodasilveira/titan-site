@@ -5,10 +5,13 @@ function hash(texto: string) {
 export function RetratoEditorial({
   name,
   realm,
+  cor = 'var(--color-fg-subtle)',
   className = '',
 }: {
   name: string;
   realm: string;
+  /** Cor de classe já resolvida, com o fallback aplicado. Ver §4.3 do doc 05. */
+  cor?: string;
   className?: string;
 }) {
   const variacao = hash(`${realm}/${name}`) % 12;
@@ -29,7 +32,7 @@ export function RetratoEditorial({
       <path
         d={`M ${-30 + variacao} 340 Q 150 ${210 + variacao} ${330 - variacao} 340`}
         fill="none"
-        stroke="var(--color-accent)"
+        stroke={cor}
         strokeOpacity=".42"
       />
       <text

@@ -194,7 +194,7 @@ export function RaidProgressTable({ report }: { report: RaidProgressReport }) {
       {/* Dado velho rotulado como velho. Esconder que a atualização falhou é
           pior que mostrar o número desatualizado. */}
       {report.stale && (
-        <p className="border-highlight/40 bg-highlight-soft text-fg-muted rounded-lg border px-4 py-3 text-sm">
+        <p className="border-danger/40 bg-danger-soft text-fg-muted rounded-lg border px-4 py-3 text-sm">
           O Warcraft Logs não respondeu agora. Isto é a última leitura boa, de{' '}
           {new Date(report.fetchedAt).toLocaleString('pt-BR', { timeZone: FUSO })}.
         </p>

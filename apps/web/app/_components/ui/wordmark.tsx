@@ -23,7 +23,7 @@ export function Wordmark({
   return (
     <Componente
       aria-label="Titan Inc"
-      className={`after:bg-edge relative inline-flex pb-1 font-sans font-extrabold tracking-[-0.02em] text-current after:absolute after:inset-x-0 after:bottom-0 after:h-px ${TAMANHOS[tamanho]} ${className}`}
+      className={`relative inline-flex items-center font-sans leading-none font-extrabold tracking-[-0.02em] text-current ${TAMANHOS[tamanho]} ${className}`}
       style={estilo}
     >
       <span aria-hidden="true">TITAN</span>

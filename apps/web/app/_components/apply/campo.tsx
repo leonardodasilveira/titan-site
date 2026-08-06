@@ -25,7 +25,7 @@ export function Campo({ id, label, ajuda, erro, textarea, input, area }: CampoPr
           id={id}
           aria-invalid={Boolean(erro)}
           aria-describedby={descricao}
-          className={`text-fg mt-2 min-h-32 w-full resize-y border-0 border-b bg-transparent py-3 outline-none focus:border-b-2 ${erro ? 'border-highlight' : 'border-border focus:border-accent'}`}
+          className={`text-fg mt-2 min-h-32 w-full resize-y border-0 border-b bg-transparent py-3 outline-none focus:border-b-2 ${erro ? 'border-danger' : 'border-border focus:border-accent'}`}
           {...area}
         />
       ) : (
@@ -33,7 +33,7 @@ export function Campo({ id, label, ajuda, erro, textarea, input, area }: CampoPr
           id={id}
           aria-invalid={Boolean(erro)}
           aria-describedby={descricao}
-          className={`text-fg mt-2 min-h-11 w-full border-0 border-b bg-transparent py-2 outline-none focus:border-b-2 ${erro ? 'border-highlight' : 'border-border focus:border-accent'}`}
+          className={`text-fg mt-2 min-h-11 w-full border-0 border-b bg-transparent py-2 outline-none focus:border-b-2 ${erro ? 'border-danger' : 'border-border focus:border-accent'}`}
           {...input}
         />
       )}{' '}
@@ -43,7 +43,7 @@ export function Campo({ id, label, ajuda, erro, textarea, input, area }: CampoPr
         </p>
       )}
       {erro && (
-        <p id={`${id}-erro`} className="text-highlight mt-2 text-[13px]">
+        <p id={`${id}-erro`} className="text-danger mt-2 text-[13px]">
           {erro}
         </p>
       )}
