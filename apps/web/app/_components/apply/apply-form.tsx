@@ -1,40 +1,17 @@
 'use client';
-import { CLASSES, ROLES, createApplicationSchema } from '@titan/shared';
+import { createApplicationSchema } from '@titan/shared';
 import { useState } from 'react';
 import { Acao } from '../ui/acao';
 import { Chapa } from '../ui/chapa';
 import { Campo } from './campo';
-import { DetentesDias } from './detentes-dias';
-
-const classePt: Record<string, string> = {
-  warrior: 'Guerreiro',
-  paladin: 'Paladino',
-  hunter: 'Caçador',
-  rogue: 'Ladino',
-  priest: 'Sacerdote',
-  'death-knight': 'Cavaleiro da Morte',
-  shaman: 'Xamã',
-  mage: 'Mago',
-  warlock: 'Bruxo',
-  monk: 'Monge',
-  druid: 'Druida',
-  'demon-hunter': 'Caçador de Demônios',
-  evoker: 'Conjurante',
-};
 export function ApplyForm() {
   const [erros, setErros] = useState<Record<string, string>>({});
   function dados(form: FormData) {
     return {
-      character: { name: form.get('character.name'), realm: form.get('character.realm') },
-      class: form.get('class'),
-      mainRole: form.get('mainRole'),
-      offRole: form.get('offRole') || undefined,
-      discordTag: form.get('discordTag'),
-      battleTag: form.get('battleTag') || undefined,
-      experience: form.get('experience'),
-      availableDays: form.getAll('availableDays').map(Number),
-      motivation: form.get('motivation'),
-      warcraftLogsUrl: form.get('warcraftLogsUrl') || undefined,
+      characterRealm: form.get('characterRealm'),
+      roleSpec: form.get('roleSpec'),
+      contact: form.get('contact'),
+      additionalInfo: form.get('additionalInfo') || undefined,
       website: form.get('website') || undefined,
     };
   }
@@ -73,12 +50,12 @@ export function ApplyForm() {
     if (primeiro) document.getElementById(primeiro)?.focus();
   }
   return (
-    <form noValidate onSubmit={submeter} onBlur={validarAoSair} className="mt-10 space-y-8">
+    <form noValidate onSubmit={submeter} onBlur={validarAoSair} className="mt-10 space-y-7">
       {Object.keys(erros).length > 0 && (
         <Chapa className="p-5">
           <div role="alert">
             <p className="text-fg font-bold">Revise a entrada</p>
-            <ul className="text-highlight mt-2 list-inside list-disc text-sm">
+            <ul className="text-danger mt-2 list-inside list-disc text-sm">
               {Object.values(erros).map((erro, i) => (
                 <li key={`${erro}-${i}`}>{erro}</li>
               ))}
@@ -86,110 +63,52 @@ export function ApplyForm() {
           </div>
         </Chapa>
       )}
-      <div className="grid gap-8 md:grid-cols-2">
-        <Campo
-          id="character.name"
-          label="Personagem"
-          ajuda="Como aparece no jogo. Acento não atrapalha."
-          erro={erros['character.name']}
-          input={{
-            name: 'character.name',
-            required: true,
-            minLength: 2,
-            maxLength: 12,
-            autoComplete: 'off',
-          }}
-        />
-        <Campo
-          id="character.realm"
-          label="Realm"
-          ajuda="Azralon, Goldrinn, Area 52…"
-          erro={erros['character.realm']}
-          input={{
-            name: 'character.realm',
-            required: true,
-            minLength: 2,
-            maxLength: 64,
-            autoComplete: 'off',
-          }}
-        />
-      </div>
-      <fieldset>
-        <legend className="text-fg-subtle font-mono text-[11px] tracking-[0.14em] uppercase">
-          Classe
-        </legend>
-        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-3">
-          {CLASSES.map((classe) => (
-            <label key={classe} className="text-fg-muted flex min-h-11 items-center gap-3 text-sm">
-              <input required type="radio" name="class" value={classe} className="accent-accent" />
-              {classePt[classe] ?? classe}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <fieldset>
-        <legend className="text-fg-subtle font-mono text-[11px] tracking-[0.14em] uppercase">
-          Função secundária
-        </legend>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <label className="text-fg-muted flex min-h-11 items-center gap-3 text-sm">
-            <input defaultChecked type="radio" name="offRole" value="" className="accent-accent" />
-            Nenhuma
-          </label>
-          {ROLES.map((role) => (
-            <label key={role} className="text-fg-muted flex min-h-11 items-center gap-3 text-sm">
-              <input type="radio" name="offRole" value={role} className="accent-accent" />
-              {role}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <fieldset>
-        <legend className="text-fg-subtle font-mono text-[11px] tracking-[0.14em] uppercase">
-          Função principal
-        </legend>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {ROLES.map((role) => (
-            <label key={role} className="text-fg-muted flex min-h-11 items-center gap-3 text-sm">
-              <input required type="radio" name="mainRole" value={role} className="accent-accent" />
-              {role}
-            </label>
-          ))}
-        </div>
-      </fieldset>
       <Campo
-        id="discordTag"
-        label="Discord"
-        erro={erros.discordTag}
-        input={{ name: 'discordTag', required: true, minLength: 2, maxLength: 37 }}
+        id="characterRealm"
+        label="Nome / realm do personagem"
+        ajuda="Ex.: Thrall — Azralon"
+        erro={erros.characterRealm}
+        input={{
+          name: 'characterRealm',
+          required: true,
+          minLength: 2,
+          maxLength: 80,
+          autoComplete: 'off',
+        }}
       />
       <Campo
-        id="battleTag"
-        label="BattleTag"
-        ajuda="Formato: Nome#1234"
-        erro={erros.battleTag}
-        input={{ name: 'battleTag', pattern: '.{2,12}#\\d{4,5}' }}
+        id="roleSpec"
+        label="Role / spec"
+        ajuda="Ex.: Tank / Protection Warrior"
+        erro={erros.roleSpec}
+        input={{
+          name: 'roleSpec',
+          required: true,
+          minLength: 2,
+          maxLength: 80,
+          autoComplete: 'off',
+        }}
       />
-      <DetentesDias />
       <Campo
-        id="experience"
-        label="Experiência"
-        erro={erros.experience}
+        id="contact"
+        label="Contato (Discord / Battle.net)"
+        ajuda="Informe a tag e a plataforma que prefere."
+        erro={erros.contact}
+        input={{
+          name: 'contact',
+          required: true,
+          minLength: 2,
+          maxLength: 100,
+          autoComplete: 'off',
+        }}
+      />
+      <Campo
+        id="additionalInfo"
+        label="Informações adicionais"
+        ajuda="Experiência, disponibilidade ou qualquer contexto que ajude a conversa."
+        erro={erros.additionalInfo}
         textarea
-        area={{ name: 'experience', required: true, maxLength: 4000 }}
-      />
-      <Campo
-        id="motivation"
-        label="Por que a Titan Inc"
-        erro={erros.motivation}
-        textarea
-        area={{ name: 'motivation', required: true, maxLength: 4000 }}
-      />
-      <Campo
-        id="warcraftLogsUrl"
-        label="Logs"
-        erro={erros.warcraftLogsUrl}
-        input={{ name: 'warcraftLogsUrl', type: 'url', inputMode: 'url' }}
+        area={{ name: 'additionalInfo', maxLength: 2000, rows: 7, autoComplete: 'off' }}
       />
       <div className="absolute -left-[9999px]" aria-hidden="true">
         <label htmlFor="website">Website</label>
