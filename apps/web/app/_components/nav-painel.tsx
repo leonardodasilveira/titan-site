@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import type { ResumoProgressaoNav } from '../../lib/progressao/resumo-nav';
+import { ProgressaoPainel } from './nav/progressao-nav';
 
 const LINKS = [
   ['#sobre', 'Sobre'],
@@ -12,9 +14,10 @@ interface NavPainelProps {
   aberto: boolean;
   aoFechar: () => void;
   gatilho: React.RefObject<HTMLButtonElement | null>;
+  progressao: ResumoProgressaoNav | null;
 }
 
-export function NavPainel({ aberto, aoFechar, gatilho }: NavPainelProps) {
+export function NavPainel({ aberto, aoFechar, gatilho, progressao }: NavPainelProps) {
   const painel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,6 +65,7 @@ export function NavPainel({ aberto, aoFechar, gatilho }: NavPainelProps) {
         className="chapa bg-surface max-h-[calc(100dvh-3.5rem)] overflow-y-auto px-6 py-6 motion-safe:animate-[assentar_200ms_cubic-bezier(.16,1,.3,1)]"
         onMouseDown={(evento) => evento.stopPropagation()}
       >
+        <ProgressaoPainel progressao={progressao} />
         {LINKS.map(([href, texto]) => (
           <a
             key={href}

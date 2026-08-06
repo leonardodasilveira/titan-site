@@ -5,26 +5,11 @@ import {
   type RaidProgressReport,
 } from '@titan/shared';
 
-export interface PontoDetente {
-  x: number;
-  y: number;
-  angulo: number;
-}
 export interface LeituraBoss {
   morto: boolean;
   pulls: number;
   melhorPercentual: number | null;
   primeiraKill: string | null;
-}
-
-export function anguloDetente(i: number, n: number): number {
-  if (n <= 1) return 0;
-  return -135 + (270 * i) / (n - 1);
-}
-
-export function polar(angulo: number, raio: number): { x: number; y: number } {
-  const radianos = (angulo * Math.PI) / 180;
-  return { x: 200 + raio * Math.sin(radianos), y: 200 - raio * Math.cos(radianos) };
 }
 
 export function escolherDificuldade(report: RaidProgressReport): number {

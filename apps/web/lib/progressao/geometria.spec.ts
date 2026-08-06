@@ -1,14 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { PROGRESSAO_MOCK_PARCIAL } from '../../../lib/mock/progressao.mock';
-import { anguloDetente, escolherDificuldade, escolherRaid, lerBoss, polar } from './geometria';
+import { PROGRESSAO_MOCK_PARCIAL } from '../mock/progressao.mock';
+import { escolherDificuldade, escolherRaid, lerBoss } from './geometria';
 
-describe('geometria do instrumento', () => {
-  it('distribui as pontas do arco', () => {
-    expect(anguloDetente(0, 8)).toBe(-135);
-    expect(anguloDetente(7, 8)).toBe(135);
-  });
-  it('centraliza uma detente', () => expect(anguloDetente(0, 1)).toBe(0));
-  it('converte o topo em coordenada', () => expect(polar(0, 100)).toEqual({ x: 200, y: 100 }));
+describe('geometria da progressão', () => {
   it('escolhe a dificuldade mais alta com kill', () =>
     expect(
       escolherDificuldade({

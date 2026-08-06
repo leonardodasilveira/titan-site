@@ -1,5 +1,6 @@
 'use client';
 import type { SessionUser } from '@titan/shared';
+import type { ResumoProgressaoNav } from '../../lib/progressao/resumo-nav';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { SiteFooter } from './site-footer';
@@ -7,9 +8,11 @@ import { SiteNav } from './site-nav';
 export function SiteShell({
   children,
   sessao,
+  progressao,
 }: {
   children: ReactNode;
   sessao: SessionUser | null;
+  progressao: ResumoProgressaoNav | null;
 }) {
   const caminho = usePathname();
   if (caminho !== '/') return <>{children}</>;
@@ -21,7 +24,7 @@ export function SiteShell({
       >
         Pular para o conteúdo
       </a>
-      <SiteNav sessao={sessao} />
+      <SiteNav sessao={sessao} progressao={progressao} />
       <main id="conteudo" className="flex flex-1 flex-col" tabIndex={-1}>
         {children}
       </main>
