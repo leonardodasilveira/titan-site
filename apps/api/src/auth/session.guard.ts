@@ -5,6 +5,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { canSeeOthersHistory, type SessionUser } from '@titan/shared';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { SESSION_COOKIE } from './auth.controller';
@@ -41,6 +42,36 @@ export class MemberGuard implements CanActivate {
 
     // Disponível para os controllers via req.user.
     (req as Request & { user?: typeof sessionUser }).user = sessionUser;
+    // A conta inteira, com TODOS os personagens no roster. O SessionUser só
+    // carrega o representante, e "meu histórico" precisa dos N — quem raida em
+    // dois chars tem que ver os dois. Ver Regra 4.
+    (req as Request & { account?: typeof user }).account = user;
+    return true;
+  }
+}
+
+/**
+ * Exige tudo do MemberGuard **mais** a flag de oficial.
+ *
+ * É o gate da Regra 7 para histórico de outra pessoa: presença e loot são dados
+ * sobre gente real, e membro não vê o histórico de membro. Exige a área interna
+ * junto, então sair da guilda derruba o acesso mesmo que ninguém lembre de
+ * desligar a flag.
+ *
+ * Herda do MemberGuard de propósito: um guard de oficial que esquecesse de
+ * checar membership seria um jeito silencioso de ex-oficial continuar lendo
+ * dado pessoal.
+ */
+@Injectable()
+export class OfficerGuard extends MemberGuard {
+  override async canActivate(context: ExecutionContext): Promise<boolean> {
+    await super.canActivate(context);
+
+    const req = context.switchToHttp().getRequest<Request & { user: SessionUser }>();
+    if (!canSeeOthersHistory(req.user)) {
+      throw new ForbiddenException('Só oficial vê o histórico de outras pessoas');
+    }
+
     return true;
   }
 }

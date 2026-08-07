@@ -146,3 +146,22 @@ export function canReviewApplications(
 ): boolean {
   return user.hasInternalAccess && user.isOfficer;
 }
+
+/**
+ * Ver o histórico de **outra pessoa** (presença, loot, evolução) — Regra 7.
+ *
+ * Membro vê o próprio histórico inteiro; só oficial vê o dos outros. Presença e
+ * loot são dados sobre pessoas reais que ninguém combinou tornar públicos ao
+ * entrar na guilda, e ranking de falta entre pares gera treta sem ajudar o raid
+ * leader a decidir nada — ele já tem o detalhe.
+ *
+ * Tem o mesmo corpo de `canReviewApplications` e mesmo assim é uma função
+ * separada, de propósito: são decisões diferentes sobre dados diferentes, e
+ * uma pode mudar sem a outra. Colapsar as duas hoje é criar o acoplamento que
+ * amanhã libera a caixa de recrutamento junto com o histórico de raid.
+ */
+export function canSeeOthersHistory(
+  user: Pick<SessionUser, 'hasInternalAccess' | 'isOfficer'>,
+): boolean {
+  return user.hasInternalAccess && user.isOfficer;
+}
