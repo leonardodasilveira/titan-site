@@ -66,7 +66,9 @@ export function NotaDoRl({ id, inicial }: { id: string; inicial: string | null }
         </button>
       )}
 
-      {erro && <span className="text-highlight text-xs">{erro}</span>}
+      {/* Aqui `danger` é o certo: falhar ao salvar é erro de verdade, e o RL
+          precisa saber que o que ele escreveu não foi guardado. */}
+      {erro && <span className="text-danger text-xs">{erro}</span>}
     </span>
   );
 }

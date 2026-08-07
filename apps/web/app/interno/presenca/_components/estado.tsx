@@ -27,7 +27,9 @@ const ESTADOS: Record<AttendanceState, { rotulo: string; classe: string; ajuda: 
   },
   'nao-raidou': {
     rotulo: 'Não raidou',
-    classe: 'text-highlight',
+    // `bronze` e não `danger`: vermelho leria como culpa, e o sistema não sabe
+    // se foi falta. Chama atenção sem acusar.
+    classe: 'text-bronze',
     ajuda: 'Confirmou e não apareceu em pull nenhuma. Só o raid leader sabe o motivo',
   },
   banco: {

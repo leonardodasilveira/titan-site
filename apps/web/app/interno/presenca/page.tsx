@@ -56,7 +56,7 @@ export default async function PresencaPage() {
   return (
     <main className="flex flex-1 flex-col gap-6">
       <div>
-        <p className="text-highlight font-mono text-xs tracking-widest uppercase">Time de raid</p>
+        <p className="text-bronze font-mono text-xs tracking-widest uppercase">Time de raid</p>
         <h1 className="text-fg mt-2 text-2xl font-semibold tracking-tight">
           {oficial ? 'Presença' : 'Minha presença'}
         </h1>
