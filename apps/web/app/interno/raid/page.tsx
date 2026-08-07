@@ -27,7 +27,7 @@ export default async function RaidPage({
   return (
     <main className="flex flex-1 flex-col gap-6">
       <div>
-        <p className="text-highlight font-mono text-xs tracking-widest uppercase">Time de raid</p>
+        <p className="text-bronze font-mono text-xs tracking-widest uppercase">Time de raid</p>
         <h1 className="text-fg mt-2 text-2xl font-semibold tracking-tight">Progressão de raid</h1>
         <p className="text-fg-muted mt-2 text-sm">
           Kill de cada boss do tier, direto dos logs. Onde ainda não houve kill, o número é o melhor
